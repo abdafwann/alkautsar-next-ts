@@ -33,7 +33,7 @@ export async function loginAdmin(prevState: any, formData: FormData) {
 
     // Create session (JWT)
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 1 week
-    const token = await new SignJWT({ adminId: admin.id, email: admin.email, role: 'admin' })
+    const token = await new SignJWT({ adminId: admin.id, email: admin.email, role: admin.role })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
