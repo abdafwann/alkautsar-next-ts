@@ -3,7 +3,12 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import AdminManagerClient from './AdminManagerClient';
 
-const secretKey = process.env.JWT_SECRET || 'alkautsar-super-secret-key-2026';
+const secretKey = process.env.JWT_SECRET;
+
+if (!secretKey) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
 const key = new TextEncoder().encode(secretKey);
 
 export default async function AdminsPage() {

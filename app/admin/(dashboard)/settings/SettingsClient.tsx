@@ -41,8 +41,8 @@ export default function SettingsClient({ initialSettings, initialBanners }: { in
 
     try {
       const res = await uploadImage(form);
-      if (res.success) {
-        setLogo({ url: res.data.secure_url, publicId: res.data.public_id });
+      if (res.success && res.data) {
+        setLogo({ url: res.data.url, publicId: res.data.publicId });
         toast.success('Logo berhasil diunggah sementara. Jangan lupa klik Simpan.');
       } else {
         toast.error(res.error || 'Gagal mengunggah logo');

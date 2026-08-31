@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath, unstable_cache } from 'next/cache';
+import { requireAdmin } from '@/lib/auth-guard';
+import { recordAdminLog } from './admin-logs';
 
 // --- CATEGORY ACTIONS ---
 
@@ -22,11 +24,13 @@ export const getCategories = unstable_cache(
     }
   },
   ['categories-list'],
-  { revalidate: 3600, tags: ['categories'] } // Cache selama 1 jam
+  { revalidate: 3600, tags: ['categories'] } // Cache for 1 hour
 );
 
 export async function createCategory(formData: FormData) {
   try {
+    const admin = await requireAdmin();
+
     const name = formData.get('name') as string;
     
     if (!name || name.trim() === '') {
@@ -37,28 +41,50 @@ export async function createCategory(formData: FormData) {
       data: { name: name.trim() }
     });
 
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'CREATE_CATEGORY',
+      entity: 'category',
+      entityId: category.id,
+      details: `Membuat kategori produk baru: ${category.name}`
+    });
+
     revalidatePath('/admin/categories');
     return { success: true, data: category };
   } catch (error: any) {
-    return { success: false, error: 'Gagal membuat kategori' };
+    return { success: false, error: error.message || 'Gagal membuat kategori' };
   }
 }
 
 export async function deleteCategory(id: string) {
   try {
+    const admin = await requireAdmin();
+
+    const cat = await prisma.category.findUnique({ where: { id }, select: { name: true } });
+
     await prisma.category.delete({
       where: { id }
+    });
+
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'DELETE_CATEGORY',
+      entity: 'category',
+      entityId: id,
+      details: `Menghapus kategori produk: ${cat?.name || id}`
     });
 
     revalidatePath('/admin/categories');
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: 'Gagal menghapus kategori (pastikan tidak ada produk di dalam kategori ini)' };
+    return { success: false, error: error.message || 'Gagal menghapus kategori (pastikan tidak ada produk di dalam kategori ini)' };
   }
 }
 
 export async function updateCategory(id: string, formData: FormData) {
   try {
+    const admin = await requireAdmin();
+
     const name = formData.get('name') as string;
     
     if (!name || name.trim() === '') {
@@ -70,10 +96,18 @@ export async function updateCategory(id: string, formData: FormData) {
       data: { name: name.trim() }
     });
 
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'UPDATE_CATEGORY',
+      entity: 'category',
+      entityId: category.id,
+      details: `Mengubah nama kategori menjadi: ${category.name}`
+    });
+
     revalidatePath('/admin/categories');
     return { success: true, data: category };
   } catch (error: any) {
-    return { success: false, error: 'Gagal memperbarui kategori' };
+    return { success: false, error: error.message || 'Gagal memperbarui kategori' };
   }
 }
 
@@ -97,13 +131,14 @@ export async function getProducts() {
         images: true
       }
     });
-    
+
     const serialized = products.map(p => ({
       ...p,
       price: Number(p.price),
       promoPrice: p.promoPrice ? Number(p.promoPrice) : null,
+      promoExpiry: p.promoExpiry?.toISOString() ?? null,
     }));
-    
+
     return { success: true, data: serialized };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -125,6 +160,7 @@ export async function getProduct(id: string) {
         ...product,
         price: Number(product.price),
         promoPrice: product.promoPrice ? Number(product.promoPrice) : null,
+        promoExpiry: product.promoExpiry?.toISOString() ?? null,
       };
       return { success: true, data: serialized };
     }
@@ -137,18 +173,33 @@ export async function getProduct(id: string) {
 
 export async function deleteProduct(id: string) {
   try {
+    const admin = await requireAdmin();
+
+    const product = await prisma.product.findUnique({ where: { id }, select: { title: true } });
+
     await prisma.product.delete({
       where: { id }
     });
+
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'DELETE_PRODUCT',
+      entity: 'product',
+      entityId: id,
+      details: `Menghapus produk: ${product?.title || id}`
+    });
+
     revalidatePath('/admin/products');
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: 'Gagal menghapus produk' };
+    return { success: false, error: error.message || 'Gagal menghapus produk' };
   }
 }
 
 export async function saveProduct(id: string | null, data: any) {
   try {
+    const admin = await requireAdmin();
+
     const { title, slug, uses, price, categoryId, productForm, composition, directions, warnings, certificate, quantity, images, isPromo, promoPercentage, promoPrice, promoExpiry } = data;
 
     // Validate slug uniqueness
@@ -200,6 +251,14 @@ export async function saveProduct(id: string | null, data: any) {
         });
       }
 
+      await recordAdminLog({
+        adminId: admin.adminId,
+        action: 'UPDATE_PRODUCT',
+        entity: 'product',
+        entityId: id,
+        details: `Memperbarui data produk: ${product.title} (Harga: Rp ${Number(product.price).toLocaleString('id-ID')}, Stok: ${product.quantity})`
+      });
+
       revalidatePath('/admin/products');
       const serialized = {
         ...product,
@@ -221,6 +280,14 @@ export async function saveProduct(id: string | null, data: any) {
         }
       });
 
+      await recordAdminLog({
+        adminId: admin.adminId,
+        action: 'CREATE_PRODUCT',
+        entity: 'product',
+        entityId: product.id,
+        details: `Menambah produk baru: ${product.title} (Stok: ${product.quantity}, Harga: Rp ${Number(product.price).toLocaleString('id-ID')})`
+      });
+
       revalidatePath('/admin/products');
       const serialized = {
         ...product,
@@ -231,7 +298,100 @@ export async function saveProduct(id: string | null, data: any) {
     }
   } catch (error: any) {
     console.error("Save Product Error:", error);
-    return { success: false, error: `Gagal menyimpan produk: ${error.message || 'Unknown error'}` };
+    return { success: false, error: error.message || 'Gagal menyimpan produk' };
+  }
+}
+
+export async function updateStock(id: string, quantity: number) {
+  try {
+    const admin = await requireAdmin();
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        quantity: {
+          increment: quantity
+        }
+      }
+    });
+
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'UPDATE_STOCK',
+      entity: 'product',
+      entityId: id,
+      details: `Menambah stok produk ${product.title}: +${quantity} (Total stok baru: ${product.quantity})`
+    });
+
+    revalidatePath('/admin/products');
+    return { success: true, data: { newQuantity: product.quantity } };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Gagal memperbarui stok' };
+  }
+}
+
+export async function updatePromo(id: string, promoData: {
+  isPromo: boolean;
+  promoPercentage: number | null;
+  promoPrice: number | null;
+  promoExpiry: string | null;
+}) {
+  try {
+    const admin = await requireAdmin();
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        isPromo: promoData.isPromo,
+        promoPercentage: promoData.promoPercentage,
+        promoPrice: promoData.promoPrice,
+        promoExpiry: promoData.promoExpiry ? new Date(promoData.promoExpiry) : null,
+      }
+    });
+
+    await recordAdminLog({
+      adminId: admin.adminId,
+      action: 'UPDATE_PROMO',
+      entity: 'product',
+      entityId: id,
+      details: `Mengatur promo ${product.title}: ${promoData.isPromo ? `Aktif (${promoData.promoPercentage}% / Rp ${promoData.promoPrice})` : 'Dinonaktifkan'}`
+    });
+
+    revalidatePath('/admin/products');
+    return {
+      success: true,
+      data: {
+        isPromo: product.isPromo,
+        promoPercentage: product.promoPercentage,
+        promoPrice: product.promoPrice ? Number(product.promoPrice) : null,
+        promoExpiry: product.promoExpiry?.toISOString() || null,
+      }
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Gagal memperbarui promo' };
+  }
+}
+
+export async function getProductsByCategory(categoryId: string) {
+  try {
+    const products = await prisma.product.findMany({
+      where: { categoryId },
+      include: {
+        images: true
+      },
+      orderBy: { title: 'asc' }
+    });
+
+    const serialized = products.map(p => ({
+      ...p,
+      price: Number(p.price),
+      promoPrice: p.promoPrice ? Number(p.promoPrice) : null,
+      promoExpiry: p.promoExpiry?.toISOString() ?? null,
+    }));
+
+    return { success: true, data: serialized };
+  } catch (error: any) {
+    return { success: false, error: 'Gagal mengambil produk' };
   }
 }
 
@@ -271,7 +431,7 @@ export async function getShopProducts(filters?: {
       price: Number(p.price),
       promoPrice: p.promoPrice ? Number(p.promoPrice) : null,
     }));
-    
+
     // Filter harga di memory agar lebih mudah menangani price dan promoPrice
     let finalProducts = serialized;
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
@@ -295,12 +455,12 @@ export async function getShopProducts(filters?: {
     // Pagination
     const page = filters?.page || 1;
     const limit = filters?.limit || 15; // 15 produk per halaman (3 baris x 5 produk)
-    
+
     const totalPages = Math.ceil(finalProducts.length / limit);
     const paginatedProducts = finalProducts.slice((page - 1) * limit, page * limit);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: paginatedProducts,
       pagination: {
         totalProducts: finalProducts.length,
@@ -310,6 +470,46 @@ export async function getShopProducts(filters?: {
       }
     };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// --- SEARCH ACTIONS ---
+
+export async function searchProductsLive(query: string) {
+  try {
+    if (!query || query.trim().length < 2) {
+      return { success: true, data: [] };
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { slug: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        category: true,
+        images: true,
+      },
+      take: 5, // Limit to 5 results for dropdown
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const serialized = products.map(p => ({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      price: Number(p.price),
+      promoPrice: p.promoPrice ? Number(p.promoPrice) : null,
+      images: p.images.map(img => ({ url: img.url })),
+      category: p.category ? { name: p.category.name } : null,
+    }));
+
+    return { success: true, data: serialized };
+  } catch (error: any) {
+    console.error('Search error:', error);
     return { success: false, error: error.message };
   }
 }

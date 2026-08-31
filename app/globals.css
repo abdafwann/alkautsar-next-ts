@@ -5,10 +5,14 @@
   --color-primary-green-hover: #285430;
   --color-dark-green: #1f422e;
   --color-accent-gold: #c3a052;
+  --color-accent-brown: #8B5A2B;
   --color-bg-light: #f8fafc;
-  
+  --color-text-main: #1a1a1a;
+  --color-secondary-cream: #faf7f2;
+  --color-secondary-green: #e8f5e9;
+
   --animate-slide-down: slide-down 0.2s ease-out forwards;
-  
+
   @keyframes slide-down {
     0% {
       opacity: 0;
@@ -43,4 +47,20 @@ input[type="button"] {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+/* Navbar dropdown fade-in animation */
+@keyframes fade-in-dropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-dropdown 0.2s ease-out;
 }

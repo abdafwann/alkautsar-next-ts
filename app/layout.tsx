@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import ToastContainer from "@/components/ui/ToastContainer";
-import { Toaster } from 'react-hot-toast';
+import FooterClient from "@/components/layout/FooterClient";
+import ToasterProvider from "@/components/ui/ToasterProvider";
+import FloatingWhatsAppClient from "@/components/store/FloatingWhatsAppClient";
+import { getStoreSettings } from '@/app/actions/settings';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,7 +16,32 @@ export const metadata: Metadata = {
   description: "Premium Herbal Remedies for Your Wellness.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settingsResponse = await getStoreSettings();
+
+  // Transform Prisma settings to FooterClient format
+  const footerSettings = settingsResponse.success && settingsResponse.data ? {
+    storeName: settingsResponse.data.storeName || 'PT. AL-KAUTSAR',
+    description: settingsResponse.data.email || null,
+    address: null,
+    email: settingsResponse.data.email || null,
+    whatsapp: settingsResponse.data.whatsapp || null,
+    facebook: null,
+    instagram: null,
+    twitter: null,
+    youtube: null,
+  } : {
+    storeName: 'PT. AL-KAUTSAR',
+    description: null,
+    address: null,
+    email: null,
+    whatsapp: null,
+    facebook: null,
+    instagram: null,
+    twitter: null,
+    youtube: null,
+  };
+
   return (
     <html lang="en">
       <head>
@@ -26,9 +52,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-grow">
           {children}
         </main>
-        <Footer />
-        <ToastContainer />
-        <Toaster position="bottom-right" />
+        <FooterClient settings={footerSettings} />
+        <FloatingWhatsAppClient whatsappNumber={settingsResponse.data?.whatsapp} />
+        <ToasterProvider />
       </body>
     </html>
   );

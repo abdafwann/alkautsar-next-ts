@@ -37,23 +37,23 @@ export default async function ShopPage({
 
   // Get total products count for "Semua Produk" badge
   const countRes = await getTotalProductsCount();
-  const totalProducts = countRes.success ? countRes.data : 0;
+  const totalProducts = countRes.success && typeof countRes.data === 'number' ? countRes.data : 0;
 
   // Create a unique key for Suspense based on URL params so it re-triggers the fallback
   const suspenseKey = JSON.stringify(params);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen pt-12 lg:pt-14">
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-100 py-4">
-        <div className="container mx-auto px-4 text-sm text-gray-500 flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 text-sm text-gray-500 flex items-center gap-2">
           <Link href="/" className="hover:text-primary-green transition-colors">Home</Link>
           <ChevronRight size={14} />
           <span className="text-gray-900 font-bold">Katalog Produk</span>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Left Sidebar (Filters & Categories) */}

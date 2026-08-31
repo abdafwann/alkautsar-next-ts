@@ -1,0 +1,230 @@
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { getSession } from '@/lib/session';
+import { revalidatePath } from 'next/cache';
+import midtransClient from 'midtrans-client';
+
+const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+const coreApi = new midtransClient.CoreApi({
+  isProduction,
+  serverKey: process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-YOUR_SERVER_KEY_HERE',
+  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-YOUR_CLIENT_KEY_HERE'
+});
+
+export async function cancelOrder(orderId: string, reason: string = 'Dibatalkan oleh pembeli') {
+  try {
+    const session = await getSession();
+    if (!session) return { success: false, error: 'Unauthorized: Silakan login terlebih dahulu' };
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Pesanan tidak ditemukan' };
+    }
+
+    if (order.userId !== session.userId) {
+      return { success: false, error: 'Akses ditolak: Anda bukan pemilik pesanan ini' };
+    }
+
+    // Cancellation boundary: Only allowed during WAITING_FOR_PAYMENT, PROCESSING, or PREPARING
+    const cancellableStatuses = ['WAITING_FOR_PAYMENT', 'PROCESSING', 'PREPARING'];
+    if (!cancellableStatuses.includes(order.orderStatus)) {
+      return {
+        success: false,
+        error: 'Pesanan tidak dapat dibatalkan karena sudah dalam proses pengiriman atau selesai.'
+      };
+    }
+
+    const wasPaid = order.paymentStatus === 'PAID';
+
+    // Transactional cancellation & inventory rollback
+    await prisma.$transaction(async (tx) => {
+      // 1. Mark order cancelled
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          orderStatus: 'CANCELLED',
+          cancelledAt: new Date(),
+          cancellationReason: reason
+        }
+      });
+
+      // 2. Restore product stock and revert sold count if it was paid
+      for (const item of order.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            quantity: { increment: item.count },
+            ...(wasPaid ? { sold: { decrement: item.count } } : {})
+          }
+        });
+      }
+
+      // 3. Rollback voucher usage count if applied
+      if (order.voucherCode) {
+        await tx.voucher.update({
+          where: { code: order.voucherCode },
+          data: { usedCount: { decrement: 1 } }
+        });
+      }
+    });
+
+    revalidatePath('/account/orders');
+    revalidatePath('/admin/orders');
+    return { success: true };
+  } catch (error: any) {
+    console.error('cancelOrder error:', error);
+    return { success: false, error: error.message || 'Gagal membatalkan pesanan' };
+  }
+}
+
+export async function syncPaymentStatus(midtransOrderId: string) {
+  try {
+    const statusResponse = await coreApi.transaction.status(midtransOrderId);
+    const transactionStatus = statusResponse.transaction_status;
+    const fraudStatus = statusResponse.fraud_status;
+
+    let finalPaymentStatus = 'UNPAID';
+    let finalOrderStatus = 'WAITING_FOR_PAYMENT';
+
+    if (transactionStatus === 'capture') {
+      if (fraudStatus === 'challenge') {
+        finalPaymentStatus = 'UNPAID';
+      } else if (fraudStatus === 'accept') {
+        finalPaymentStatus = 'PAID';
+        finalOrderStatus = 'PROCESSING';
+      }
+    } else if (transactionStatus === 'settlement') {
+      finalPaymentStatus = 'PAID';
+      finalOrderStatus = 'PROCESSING';
+    } else if (transactionStatus === 'cancel' || transactionStatus === 'deny' || transactionStatus === 'expire') {
+      finalPaymentStatus = 'UNPAID';
+      finalOrderStatus = 'CANCELLED';
+    } else if (transactionStatus === 'pending') {
+      finalPaymentStatus = 'UNPAID';
+      finalOrderStatus = 'WAITING_FOR_PAYMENT';
+    }
+
+    await prisma.order.update({
+      where: { orderId: midtransOrderId },
+      data: {
+        paymentStatus: finalPaymentStatus as any,
+        orderStatus: finalOrderStatus as any,
+        paymentType: statusResponse.payment_type || undefined,
+        paymentSettlement: statusResponse.settlement_time || undefined
+      }
+    });
+
+    revalidatePath('/account/orders');
+    revalidatePath('/admin/orders');
+    return { success: true };
+  } catch (error) {
+    console.error('syncPaymentStatus error:', error);
+    return { success: false, error: 'Gagal sinkronisasi status pembayaran' };
+  }
+}
+
+export async function confirmOrderDelivery(orderId: string, email?: string) {
+  try {
+    const session = await getSession();
+    const cleanOrderId = orderId.trim();
+    const cleanEmail = email?.toLowerCase().trim();
+
+    const order = await prisma.order.findUnique({
+      where: { orderId: cleanOrderId }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Pesanan tidak ditemukan' };
+    }
+
+    // Check authorization: member matching userId OR guest matching email
+    let isAuthorized = false;
+    if (session && order.userId && session.userId === order.userId) {
+      isAuthorized = true;
+    }
+    if (!isAuthorized && cleanEmail) {
+      const matchGuest = order.guestEmail && order.guestEmail.toLowerCase().trim() === cleanEmail;
+      if (matchGuest) isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return { success: false, error: 'Akses ditolak: Verifikasi email atau login diperlukan' };
+    }
+
+    // Can only confirm if IN_DELIVERY or DELIVERED
+    if (order.orderStatus !== 'IN_DELIVERY' && order.orderStatus !== 'DELIVERED') {
+      return { success: false, error: 'Pesanan belum dalam status pengiriman' };
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        orderStatus: 'COMPLETED',
+        deliveredAt: order.deliveredAt || new Date()
+      }
+    });
+
+    revalidatePath('/account/orders');
+    revalidatePath('/admin/orders');
+    revalidatePath('/track-order');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('confirmOrderDelivery error:', error);
+    return { success: false, error: error.message || 'Gagal mengkonfirmasi penerimaan pesanan' };
+  }
+}
+
+export async function requestOrderComplaint(orderId: string, reason: string, email?: string) {
+  try {
+    const session = await getSession();
+    const cleanOrderId = orderId.trim();
+    const cleanEmail = email?.toLowerCase().trim();
+
+    const order = await prisma.order.findUnique({
+      where: { orderId: cleanOrderId }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Pesanan tidak ditemukan' };
+    }
+
+    let isAuthorized = false;
+    if (session && order.userId && session.userId === order.userId) {
+      isAuthorized = true;
+    }
+    if (!isAuthorized && cleanEmail) {
+      const matchGuest = order.guestEmail && order.guestEmail.toLowerCase().trim() === cleanEmail;
+      if (matchGuest) isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return { success: false, error: 'Akses ditolak: Verifikasi email atau login diperlukan' };
+    }
+
+    if (order.orderStatus !== 'IN_DELIVERY' && order.orderStatus !== 'DELIVERED') {
+      return { success: false, error: 'Komplain hanya dapat diajukan untuk pesanan yang sedang/sudah dikirim' };
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        orderStatus: 'RETURN_REQUESTED'
+      }
+    });
+
+    revalidatePath('/account/orders');
+    revalidatePath('/admin/orders');
+    revalidatePath('/track-order');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('requestOrderComplaint error:', error);
+    return { success: false, error: error.message || 'Gagal mengajukan komplain pesanan' };
+  }
+}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InputPassword } from '@/components/ui/InputPassword';
 import { loginUser } from '@/app/actions/userAuth';
-import { mergeGuestCart, getDbCart } from '@/app/actions/cart';
+import { mergeGuestCart } from '@/app/actions/cart';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from 'react-hot-toast';
 
@@ -23,25 +23,16 @@ export default function LoginPage() {
     const res = await loginUser(formData);
 
     if (res.success) {
-      // 1. Merge Guest Cart
+      // Merge guest cart to DB (Navbar will fetch fresh DB cart on next mount)
       const guestItems = useCartStore.getState().items;
       await mergeGuestCart(guestItems);
-      
-      // 2. Load DB Cart
-      const dbCartRes = await getDbCart();
-      if (dbCartRes.success && dbCartRes.data) {
-        useCartStore.getState().setCart(dbCartRes.data);
-      }
 
       toast.success('Berhasil login! Selamat datang kembali.');
-      // Untuk sementara redirect ke halaman beranda toko
-      // (Bisa diubah nanti ke halaman profile / dashboard)
       window.location.href = '/';
     } else {
       toast.error(res.error || 'Gagal login. Silakan coba lagi.');
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   return (
@@ -52,20 +43,20 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleLogin} className="space-y-5">
-        <Input 
-          label="Email" 
-          name="email" 
-          type="email" 
-          placeholder="contoh@email.com" 
-          required 
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          placeholder="contoh@email.com"
+          required
         />
-        
+
         <div>
-          <InputPassword 
-            label="Kata Sandi" 
-            name="password" 
-            placeholder="Masukkan kata sandi Anda" 
-            required 
+          <InputPassword
+            label="Kata Sandi"
+            name="password"
+            placeholder="Masukkan kata sandi Anda"
+            required
           />
           <div className="flex justify-end mt-2">
             <Link href="/forgot-password" className="text-sm text-primary-green hover:text-primary-green-hover font-medium">
@@ -74,9 +65,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full h-12 text-base mt-2" 
+        <Button
+          type="submit"
+          className="w-full h-12 text-base mt-2"
           isLoading={isLoading}
         >
           Masuk Sekarang

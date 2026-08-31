@@ -19,6 +19,15 @@
 
 # production
 /build
+/tests
+/analysis
+/docs
+docs/
+analysis/
+
+# markdown files
+*.md
+*.MD
 
 # misc
 .DS_Store
@@ -45,3 +54,13 @@ AGENTS.md
 CLAUDE.md
 skills-lock.json
 .agents/
+.claude/
+
+# Temporary & manual scratch scripts
+create-admin.cjs
+query-admin.js
+reset-email.js
+reset-email.ts
+test.js
+
+

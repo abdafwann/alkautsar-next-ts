@@ -4,8 +4,14 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
+import { recordAdminLog } from './admin-logs';
 
-const secretKey = process.env.JWT_SECRET || 'alkautsar-super-secret-key-2026';
+const secretKey = process.env.JWT_SECRET;
+
+if (!secretKey) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
+
 const key = new TextEncoder().encode(secretKey);
 
 /**
@@ -60,7 +66,7 @@ export async function getAdmins() {
 }
 
 export async function createAdmin(formData: FormData) {
-  const { isAuthorized } = await verifySuperAdmin();
+  const { isAuthorized, currentAdminId } = await verifySuperAdmin();
   if (!isAuthorized) {
     return { success: false, error: 'Akses Ditolak: Hanya SuperAdmin yang bisa membuat admin baru' };
   }
@@ -78,7 +84,12 @@ export async function createAdmin(formData: FormData) {
 
     // Layer 1.5: Master Security Code (Sudo Mode)
     // Membaca dari environment variable, fallback ke string jika env belum terload
-    const VALID_MASTER_KEY = process.env.MASTER_SECURITY_CODE || '26alkautsar20hebat';
+    const VALID_MASTER_KEY = process.env.MASTER_SECURITY_CODE;
+
+    if (!VALID_MASTER_KEY) {
+      return { success: false, error: 'Kode Keamanan belum dikonfigurasi di server' };
+    }
+
     if (masterKey !== VALID_MASTER_KEY) {
       return { success: false, error: 'Kode Keamanan Salah! Akses Ditolak.' };
     }
@@ -111,6 +122,16 @@ export async function createAdmin(formData: FormData) {
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
+    if (currentAdminId) {
+      await recordAdminLog({
+        adminId: currentAdminId,
+        action: 'CREATE_ADMIN',
+        entity: 'admin',
+        entityId: newAdmin.id,
+        details: `Membuat admin baru: ${newAdmin.name} (${newAdmin.email}) dengan role ${newAdmin.role}`
+      });
+    }
+
     return { success: true, data: newAdmin };
   } catch (error) {
     console.error('Create Admin Error:', error);
@@ -129,9 +150,25 @@ export async function deleteAdmin(adminId: string) {
   }
 
   try {
+    const targetAdmin = await prisma.admin.findUnique({
+      where: { id: adminId },
+      select: { name: true, email: true }
+    });
+
     await prisma.admin.delete({
       where: { id: adminId }
     });
+
+    if (currentAdminId) {
+      await recordAdminLog({
+        adminId: currentAdminId,
+        action: 'DELETE_ADMIN',
+        entity: 'admin',
+        entityId: adminId,
+        details: `Menghapus akun admin: ${targetAdmin?.name || adminId} (${targetAdmin?.email || '-'})`
+      });
+    }
+
     return { success: true };
   } catch (error) {
     return { success: false, error: 'Gagal menghapus admin' };

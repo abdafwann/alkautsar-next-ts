@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath, unstable_cache } from 'next/cache';
+import { requireAdmin } from '@/lib/auth-guard';
 
 // Mengambil StoreSettings (Karena singleton, kita ambil yang id-nya 'default')
 // Menggunakan cache agar tidak membebani database setiap kali navbar/footer di-render
@@ -39,6 +40,8 @@ export async function updateStoreSettings(data: {
   logoPublicId?: string;
 }) {
   try {
+    await requireAdmin();
+
     const settings = await prisma.storeSettings.upsert({
       where: { id: 'default' },
       update: data,
@@ -53,6 +56,6 @@ export async function updateStoreSettings(data: {
     
     return { success: true, data: settings };
   } catch (error: any) {
-    return { success: false, error: 'Gagal memperbarui pengaturan toko.' };
+    return { success: false, error: error.message || 'Gagal memperbarui pengaturan toko.' };
   }
 }

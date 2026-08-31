@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { ChevronRight, Heart, Trash2, ShoppingCart } from 'lucide-react';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
-import { useToastStore } from '@/components/ui/ToastContainer';
+import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function WishlistPage() {
   const items = useWishlistStore((s) => s.items);
   const removeItem = useWishlistStore((s) => s.removeItem);
   const clearWishlist = useWishlistStore((s) => s.clearWishlist);
   const addToCart = useCartStore((s) => s.addItem);
-  const addToast = useToastStore((s) => s.addToast);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -30,7 +30,7 @@ export default function WishlistPage() {
       slug: item.slug,
     });
     removeItem(item.id);
-    addToast(`${item.title} dipindahkan ke keranjang`);
+    toast.success(`${item.title} dipindahkan ke keranjang`);
   };
 
   const handleMoveAllToCart = () => {
@@ -46,14 +46,14 @@ export default function WishlistPage() {
       });
     });
     clearWishlist();
-    addToast(`${items.length} produk dipindahkan ke keranjang`);
+    toast.success(`${items.length} produk dipindahkan ke keranjang`);
   };
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen pt-12 lg:pt-14">
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-100 py-4">
-        <div className="container mx-auto px-4 text-sm text-gray-500 flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 text-sm text-gray-500 flex items-center gap-2">
           <Link href="/" className="hover:text-primary-green transition-colors">Home</Link>
           <ChevronRight size={14} />
           <span className="text-gray-900 font-bold">Wishlist</span>
@@ -108,7 +108,7 @@ export default function WishlistPage() {
                 <div key={item.id} className="flex items-center gap-5 bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   {/* Image */}
                   <Link href={`/product/${item.slug}`} className="w-24 h-24 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 overflow-hidden p-3">
-                    <img src={item.imageUrl} alt={item.title} className="max-h-full object-contain" />
+                    <Image src={item.imageUrl} alt={item.title} width={96} height={96} className="max-h-full object-contain" />
                   </Link>
 
                   {/* Info */}
@@ -141,7 +141,7 @@ export default function WishlistPage() {
                     <button 
                       onClick={() => {
                         removeItem(item.id);
-                        addToast(`${item.title} dihapus dari wishlist`);
+                        toast.success(`${item.title} dihapus dari wishlist`);
                       }}
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-200"
                     >

@@ -1,34 +1,49 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT } from 'jose';
+import { checkRateLimit } from '@/lib/rateLimitWrapper';
 
-const secretKey = process.env.JWT_SECRET || 'alkautsar-super-secret-key-2026';
-const key = new TextEncoder().encode(secretKey);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET || 'development-fallback-secret-key-32-chars-long';
+  return new TextEncoder().encode(secret);
+}
 
-export async function loginAdmin(prevState: any, formData: FormData) {
+export async function loginAdmin(_prevState: any, formData: FormData) {
   try {
+    const headerList = await headers();
+    const ip = headerList.get('x-forwarded-for')?.split(',')[0].trim() || headerList.get('x-real-ip') || '127.0.0.1';
+
+    // Rate limiting: max 5 attempts per 10 minutes per IP (Brute-force protection)
+    const rateLimit = await checkRateLimit(ip, 'auth');
+    if (!rateLimit.isAllowed) {
+      return { 
+        success: false, 
+        error: 'Terlalu banyak percobaan login gagal. Harap tunggu beberapa menit sebelum mencoba kembali.' 
+      };
+    }
+
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
     if (!email || !password) {
-      return { error: 'Email dan password harus diisi.' };
+      return { success: false, error: 'Email dan password harus diisi.' };
     }
 
     const admin = await prisma.admin.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
 
     if (!admin) {
-      return { error: 'Email tidak terdaftar sebagai admin.' };
+      return { success: false, error: 'Email atau password salah.' };
     }
 
     const isValidPassword = await bcrypt.compare(password, admin.password);
 
     if (!isValidPassword) {
-      return { error: 'Password salah.' };
+      return { success: false, error: 'Email atau password salah.' };
     }
 
     // Create session (JWT)
@@ -37,9 +52,9 @@ export async function loginAdmin(prevState: any, formData: FormData) {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(key);
+      .sign(getJwtSecret());
 
-    // Set HTTP-Only Cookie
+    // Set secure HTTP-Only Cookie
     const cookieStore = await cookies();
     cookieStore.set('admin_session', token, {
       httpOnly: true,
@@ -50,15 +65,13 @@ export async function loginAdmin(prevState: any, formData: FormData) {
     });
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    return { error: 'Terjadi kesalahan pada server.' };
+    return { success: false, error: 'Terjadi kesalahan pada server saat login.' };
   }
 }
 
-
-
-export async function logoutAdmin() {
+export async function logoutAdmin(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete('admin_session');
 }

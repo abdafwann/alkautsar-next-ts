@@ -53,7 +53,7 @@ export default async function ProductGridServer({
     <div className="flex flex-col">
       {/* Header / Sorting */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-base font-semibold text-gray-500">
           {totalFilteredProducts} Produk Ditemukan
         </h1>
         <div className="flex items-center gap-2">
@@ -62,22 +62,30 @@ export default async function ProductGridServer({
         </div>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
+      {/* Product Grid - fixed row height allows expansion to float over neighbors */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4" style={{ gridAutoRows: '320px' }}>
         {products.length > 0 ? (
-          products.map((product: any) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              title={product.title}
-              price={product.promoPrice || product.price}
-              originalPrice={product.promoPrice ? product.price : undefined}
-              discountPercentage={product.promoPercentage}
-              imageUrl={product.images && product.images.length > 0 ? product.images[0].url : 'https://placehold.co/400x400?text=No+Image'}
-              slug={product.slug}
-              productForm={product.productForm}
-            />
-          ))
+          products.map((product: any) => {
+            const isPromoActive = Boolean(
+              product.isPromo &&
+              product.promoPrice &&
+              (!product.promoExpiry || new Date(product.promoExpiry) >= new Date())
+            );
+
+            return (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                title={product.title}
+                price={isPromoActive ? product.promoPrice : product.price}
+                originalPrice={isPromoActive ? product.price : undefined}
+                discountPercentage={isPromoActive ? product.promoPercentage : undefined}
+                imageUrl={product.images && product.images.length > 0 ? product.images[0].url : 'https://placehold.co/400x400?text=No+Image'}
+                slug={product.slug}
+                productForm={product.productForm}
+              />
+            );
+          })
         ) : (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
             <Filter className="text-gray-300 mb-4" size={48} />

@@ -23,6 +23,9 @@ model User {
   passwordChangedAt    DateTime?
   passwordResetToken   String?
   passwordResetExpires DateTime?
+  pendingEmail         String?
+  emailOtp             String?
+  emailOtpExpires      DateTime?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   cartItems            CartItem[]
@@ -58,6 +61,8 @@ model Product {
   favoritedBy     User[]         @relation("ProductToUser")
 
   @@index([isPromo, promoExpiry])
+  @@index([categoryId])
+  @@index([createdAt])
 }
 
 model ProductImage {
@@ -87,6 +92,7 @@ model Admin {
   role      AdminRole @default(ADMIN)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  logs      AdminLog[]
 }
 
 model Order {
@@ -108,6 +114,7 @@ model Order {
   paymentCurrency    String?       @default("IDR")
   paymentSettlement  String?
   paymentType        String?
+  paymentExpiry      DateTime?
   shippingName       String?
   shippingMobile     String?
   shippingAddress    String?
@@ -117,10 +124,19 @@ model Order {
   shippingNote       String?
   cancellationReason String?
   cancelledAt        DateTime?
+  snapToken          String?
+  voucherId          String?
+  voucherCode        String?
+  discountAmount     Decimal?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   user               User?         @relation(fields: [userId], references: [id])
   orderItems         OrderItem[]
+
+  @@index([userId])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -131,6 +147,9 @@ model OrderItem {
   price     Decimal
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model CartItem {
@@ -144,15 +163,20 @@ model CartItem {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }
 
 enum OrderStatus {
   WAITING_FOR_PAYMENT
   PROCESSING
+  PREPARING
   IN_DELIVERY
   DELIVERED
   COMPLETED
   CANCELLED
+  RETURN_REQUESTED
+  RETURNED
 }
 
 enum PaymentStatus {
@@ -178,4 +202,78 @@ model Banner {
   isActive    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum VoucherType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Voucher {
+  id             String      @id @default(uuid())
+  code           String      @unique
+  type           VoucherType @default(PERCENTAGE)
+  discountValue  Decimal
+  minOrderAmount Decimal?
+  maxDiscount    Decimal?
+  expiryDate     DateTime
+  usageLimit     Int?
+  usedCount      Int         @default(0)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([code])
+  @@index([isActive, expiryDate])
+}
+
+model Article {
+  id            String    @id @default(uuid())
+  title         String
+  slug           String    @unique
+  content        String
+  excerpt        String?
+  imageUrl       String?
+  imagePublicId  String?
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([isPublished, publishedAt])
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  entity    String   @default("system")
+  entityId  String?
+  details   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model Inquiry {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  isRead    Boolean   @default(false)
+  repliedAt DateTime?
+  repliedBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([isRead])
+  @@index([createdAt])
 }

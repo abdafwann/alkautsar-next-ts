@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath, unstable_cache } from 'next/cache';
 import { uploadImage, deleteImage } from './upload';
+import { requireAdmin } from '@/lib/auth-guard';
 
 export const getBanners = unstable_cache(
   async () => {
@@ -37,6 +38,8 @@ export const getActiveBanners = unstable_cache(
 
 export async function uploadBannerData(formData: FormData) {
   try {
+    await requireAdmin();
+
     const title = formData.get('title') as string | null;
     
     // Upload image first
@@ -48,22 +51,24 @@ export async function uploadBannerData(formData: FormData) {
     const banner = await prisma.banner.create({
       data: {
         title: title || 'Banner Baru',
-        publicId: uploadRes.data.public_id,
-        url: uploadRes.data.secure_url,
+        publicId: uploadRes.data.publicId,
+        url: uploadRes.data.url,
         isActive: false // Default off
       }
     });
 
     revalidatePath('/admin/settings');
-    revalidatePath('/'); // Revalidate homepage too in case it was set to active immediately (though it's false here)
+    revalidatePath('/'); // Revalidate homepage too
     return { success: true, data: banner };
   } catch (error: any) {
-    return { success: false, error: 'Gagal menyimpan banner ke database.' };
+    return { success: false, error: error.message || 'Gagal menyimpan banner ke database.' };
   }
 }
 
 export async function toggleBanner(id: string, isActive: boolean) {
   try {
+    await requireAdmin();
+
     const banner = await prisma.banner.update({
       where: { id },
       data: { isActive }
@@ -73,12 +78,14 @@ export async function toggleBanner(id: string, isActive: boolean) {
     revalidatePath('/'); // Home page
     return { success: true, data: banner };
   } catch (error: any) {
-    return { success: false, error: 'Gagal mengubah status banner.' };
+    return { success: false, error: error.message || 'Gagal mengubah status banner.' };
   }
 }
 
 export async function deleteBanner(id: string, publicId: string) {
   try {
+    await requireAdmin();
+
     // Hapus dari Cloudinary
     await deleteImage(publicId);
 
@@ -91,6 +98,6 @@ export async function deleteBanner(id: string, publicId: string) {
     revalidatePath('/');
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: 'Gagal menghapus banner.' };
+    return { success: false, error: error.message || 'Gagal menghapus banner.' };
   }
 }
