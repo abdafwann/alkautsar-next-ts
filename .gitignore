@@ -49,13 +49,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# AI Agent / Dev Tools
-AGENTS.md
-CLAUDE.md
-skills-lock.json
-.agents/
-.claude/
-
 # Temporary & manual scratch scripts
 create-admin.cjs
 query-admin.js
