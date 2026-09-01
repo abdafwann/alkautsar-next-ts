@@ -1,5 +1,4 @@
-'use client';
-
+import Image from 'next/image';
 import Link from 'next/link';
 import { Edit2, Trash2, Tag, PackagePlus, Zap, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
@@ -18,7 +17,7 @@ export function ProductTableRow({
   onPromoClick,
   onDeleteClick,
 }: ProductTableRowProps) {
-  const image = product.images?.[0]?.url || 'https://via.placeholder.com/80';
+  const image = product.images?.[0]?.url || 'https://placehold.co/96x96?text=Al-Kautsar';
   const formattedPrice = formatCurrency(product.price);
   const formattedPromoPrice = product.isPromo && product.promoPrice
     ? formatCurrency(product.promoPrice)
@@ -35,8 +34,15 @@ export function ProductTableRow({
       {/* Product */}
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-[12px] bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
-            <img src={image} alt={product.title} className="w-full h-full object-cover" />
+          <div className="w-12 h-12 rounded-[12px] bg-gray-100 overflow-hidden shrink-0 border border-gray-100 relative">
+            <Image 
+              src={image} 
+              alt={product.title} 
+              width={48} 
+              height={48} 
+              className="w-full h-full object-cover" 
+              loading="lazy"
+            />
           </div>
           <div>
             <p className="font-bold text-gray-900 text-sm">{product.title}</p>

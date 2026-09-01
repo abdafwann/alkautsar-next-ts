@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface LogoProps {
   storeName?: string | null;
@@ -26,9 +27,12 @@ export function Logo({ storeName, logoUrl }: LogoProps) {
       {/* Brand Icon / Logo Emblem */}
       {logoUrl ? (
         <div className="h-10 max-h-10 flex items-center shrink-0">
-          <img 
+          <Image 
             src={logoUrl} 
             alt={displayName} 
+            width={140}
+            height={36}
+            priority
             className="h-9 w-auto max-w-[150px] object-contain group-hover:scale-103 transition-transform duration-300"
           />
         </div>

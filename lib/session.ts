@@ -1,9 +1,18 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.JWT_SECRET || 'development-fallback-secret-key-32-chars-long';
+const getSecretKey = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production');
+    }
+    return 'development-fallback-secret-key-32-chars-long';
+  }
+  return secret;
+};
 
-export const encodedKey = new TextEncoder().encode(secretKey);
+export const encodedKey = new TextEncoder().encode(getSecretKey());
 
 export interface SessionPayload {
   userId: string;

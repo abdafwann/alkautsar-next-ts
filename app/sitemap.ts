@@ -4,17 +4,21 @@ import { prisma } from '@/lib/prisma';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-  // Get all products
-  const products = await prisma.product.findMany({
-    select: { slug: true, updatedAt: true }
-  });
+  let productUrls: MetadataRoute.Sitemap = [];
+  try {
+    const products = await prisma.product.findMany({
+      select: { slug: true, updatedAt: true }
+    });
 
-  const productUrls = products.map((product) => ({
-    url: `${baseUrl}/product/${product.slug}`,
-    lastModified: product.updatedAt,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }));
+    productUrls = products.map((product) => ({
+      url: `${baseUrl}/product/${product.slug}`,
+      lastModified: product.updatedAt,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    }));
+  } catch (error) {
+    console.warn('Sitemap build: unable to query products during static generation', error);
+  }
 
   // Static URLs
   const staticUrls = [

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { MapPin, Mail, Phone, ArrowRight } from 'lucide-react';
@@ -47,7 +48,13 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
           <div className="lg:col-span-4 lg:pr-12">
             <h4 className="text-xl font-heading font-extrabold mb-6 tracking-tight flex items-center gap-2.5 text-white">
               {logoUrl ? (
-                <img src={logoUrl} alt={storeName} className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert" />
+                <Image 
+                  src={logoUrl} 
+                  alt={storeName} 
+                  width={140} 
+                  height={32} 
+                  className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert" 
+                />
               ) : (
                 <i className="fas fa-leaf text-primary-green text-lg"></i>
               )}
