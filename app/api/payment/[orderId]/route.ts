@@ -128,7 +128,7 @@ export async function GET(
       ? order.paymentExpiry.toISOString()
       : order.paymentExpiry;
 
-    const claimToken = await createOrderClaimToken(order.orderId, rawGuestEmail || '');
+    const claimToken = await createOrderClaimToken(String(order.orderId || ''), String(rawGuestEmail || ''));
 
     const response = NextResponse.json({
       success: true,

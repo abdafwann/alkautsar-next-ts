@@ -3,6 +3,8 @@ import { getInquiries } from '@/app/actions/inquiries';
 import InquiriesClient from './InquiriesClient';
 import AdminPageErrorBoundary from '../_components/AdminPageErrorBoundary';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Pesan Pelanggan | Admin Al-Kautsar',
   description: 'Kelola pertanyaan, konsultasi produk, dan pesan masuk pelanggan',

@@ -32,6 +32,7 @@ import {
 import { formatCurrency, formatCompactCurrency } from '@/lib/format';
 import { toast } from 'react-hot-toast';
 import { Input } from '@/components/ui/Input';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 
 interface SalesData {
   chartData: Array<{ name: string; revenue: number; orders: number }>;
@@ -147,16 +148,8 @@ const DUMMY_TOP_PRODUCTS: TopProduct[] = [
   },
 ];
 
-const PERIOD_PRESETS = [
-  { id: 'this_month', label: 'Bulan Ini' },
-  { id: '30d', label: '30 Hari' },
-  { id: '7d', label: '7 Hari' },
-  { id: 'today', label: 'Hari Ini' },
-  { id: 'this_year', label: 'Tahun Ini' },
-  { id: 'custom', label: 'Kustom' },
-] as const;
-
 export default function ReportsClient() {
+  const { t, locale } = useAdminLanguage();
   const [salesData, setSalesData] = useState<SalesData | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [isUsingDummy, setIsUsingDummy] = useState(false);
@@ -166,6 +159,15 @@ export default function ReportsClient() {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [chartView, setChartView] = useState<'both' | 'revenue' | 'orders'>('both');
+
+  const periodPresets = useMemo(() => [
+    { id: 'this_month', label: t('chartPeriodThisMonth') },
+    { id: '30d', label: t('chartPeriod30Days') },
+    { id: '7d', label: t('chartPeriod7Days') },
+    { id: 'today', label: locale === 'EN' ? 'Today' : 'Hari Ini' },
+    { id: 'this_year', label: t('chartPeriodThisYear') },
+    { id: 'custom', label: t('filterCustomDate') },
+  ], [t, locale]);
 
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
@@ -232,12 +234,12 @@ export default function ReportsClient() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success('Laporan penjualan CSV berhasil diunduh');
+        toast.success(locale === 'EN' ? 'Sales report CSV downloaded' : 'Laporan penjualan CSV berhasil diunduh');
       } else {
-        toast.error(res.error || 'Gagal mengekspor laporan');
+        toast.error(res.error || (locale === 'EN' ? 'Failed to export report' : 'Gagal mengekspor laporan'));
       }
     } catch {
-      toast.error('Terjadi kesalahan saat mengekspor laporan');
+      toast.error(locale === 'EN' ? 'Export failed due to system error' : 'Terjadi kesalahan saat mengekspor laporan');
     } finally {
       setIsExporting(false);
     }
@@ -295,9 +297,9 @@ export default function ReportsClient() {
         {/* Period Selector Tabs */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-gray-400 font-semibold mr-1 flex items-center gap-1">
-            <Calendar size={13} /> Periode:
+            <Calendar size={13} /> {t('filterPeriod')}:
           </span>
-          {PERIOD_PRESETS.map((preset) => {
+          {periodPresets.map((preset) => {
             const active = selectedPeriod === preset.id;
             return (
               <button
@@ -343,7 +345,7 @@ export default function ReportsClient() {
           className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shrink-0"
         >
           {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-          <span>Ekspor Laporan (CSV)</span>
+          <span>{isExporting ? t('exporting') : t('exportCSV')}</span>
         </button>
       </div>
 
@@ -355,7 +357,7 @@ export default function ReportsClient() {
             <Wallet size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] text-gray-400 font-medium truncate">Total Pendapatan</div>
+            <div className="text-[11px] text-gray-400 font-medium truncate">{t('totalRevenue')}</div>
             <div className="text-base font-bold text-gray-900 font-mono mt-0.5 truncate">
               {formatCurrency(summary.revenue)}
             </div>
@@ -376,9 +378,9 @@ export default function ReportsClient() {
             <ShoppingBag size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] text-gray-400 font-medium truncate">Pesanan Selesai</div>
+            <div className="text-[11px] text-gray-400 font-medium truncate">{t('completedOrders')}</div>
             <div className="text-base font-bold text-gray-900 mt-0.5">
-              {summary.orders} <span className="text-xs font-normal text-gray-500">Order</span>
+              {summary.orders} <span className="text-xs font-normal text-gray-500">{t('orders')}</span>
             </div>
             {summary.ordersGrowth !== 0 && (
               <div className={`flex items-center gap-0.5 text-[10px] font-bold mt-0.5 ${
@@ -397,11 +399,11 @@ export default function ReportsClient() {
             <TrendingUp size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] text-gray-400 font-medium truncate">Rata-Rata Transaksi (AOV)</div>
+            <div className="text-[11px] text-gray-400 font-medium truncate">{t('avgOrderValue')}</div>
             <div className="text-base font-bold text-gray-900 font-mono mt-0.5 truncate">
               {formatCurrency(summary.averageOrderValue)}
             </div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Per order sukses</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Per order</div>
           </div>
         </div>
 
@@ -411,11 +413,11 @@ export default function ReportsClient() {
             <CheckCircle2 size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] text-gray-400 font-medium truncate">Keberhasilan Bayar</div>
+            <div className="text-[11px] text-gray-400 font-medium truncate">{t('successRate')}</div>
             <div className="text-base font-bold text-teal-700 mt-0.5">
               {summary.paymentSuccessRate || 100}%
             </div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Rasio order berbayar</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Payment ratio</div>
           </div>
         </div>
 
@@ -425,11 +427,11 @@ export default function ReportsClient() {
             <Tag size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] text-gray-400 font-medium truncate">Total Subsidi Diskon</div>
+            <div className="text-[11px] text-gray-400 font-medium truncate">{t('totalDiscountGiven')}</div>
             <div className="text-base font-bold text-purple-700 font-mono mt-0.5 truncate">
               {formatCurrency(summary.totalDiscounts || 0)}
             </div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Voucher & promo</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">{t('vouchers')}</div>
           </div>
         </div>
       </div>
@@ -440,8 +442,8 @@ export default function ReportsClient() {
         <div className="bg-white p-4 rounded-xl border border-gray-200/70 shadow-xs lg:col-span-2 flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Kurva Tren Penjualan & Omset Bulanan</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Akumulasi 12 bulan terakhir: <strong className="font-mono text-gray-800">{formatCurrency(annualTotalRevenue)}</strong></p>
+              <h3 className="text-sm font-bold text-gray-900">{t('salesTrendChartTitle')}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{t('salesTrendChartSubtitle')}: <strong className="font-mono text-gray-800">{formatCurrency(annualTotalRevenue)}</strong></p>
             </div>
 
             {/* Chart View Mode Controls */}
@@ -452,7 +454,7 @@ export default function ReportsClient() {
                   chartView === 'both' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Gabungan
+                {locale === 'EN' ? 'Combined' : 'Gabungan'}
               </button>
               <button
                 onClick={() => setChartView('revenue')}
@@ -460,7 +462,7 @@ export default function ReportsClient() {
                   chartView === 'revenue' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Omset (Rp)
+                {t('metricRevenue')} (Rp)
               </button>
               <button
                 onClick={() => setChartView('orders')}
@@ -468,7 +470,7 @@ export default function ReportsClient() {
                   chartView === 'orders' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Pesanan (Qty)
+                {t('metricOrders')} (Qty)
               </button>
             </div>
           </div>
@@ -519,7 +521,7 @@ export default function ReportsClient() {
                             <div key={idx} className="flex items-center justify-between gap-3 text-[11px]">
                               <span className="text-gray-400 capitalize">{entry.name}:</span>
                               <strong className="font-mono text-white">
-                                {entry.name === 'revenue' ? formatCurrency(entry.value as number) : `${entry.value} Pesanan`}
+                                {entry.name === 'revenue' ? formatCurrency(entry.value as number) : `${entry.value} ${t('orders')}`}
                               </strong>
                             </div>
                           ))}
@@ -561,13 +563,13 @@ export default function ReportsClient() {
           <div className="flex items-center justify-between pt-3 mt-2 border-t border-gray-100 text-xs text-gray-500">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Omset Penjualan (Rp)
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> {t('metricRevenue')} (Rp)
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Volume Pesanan
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> {t('metricOrders')}
               </span>
             </div>
-            <span className="text-[11px] text-gray-400">Data terinkremental otomatis</span>
+            <span className="text-[11px] text-gray-400">{locale === 'EN' ? 'Auto-synced data' : 'Data terinkremental otomatis'}</span>
           </div>
         </div>
 
@@ -576,8 +578,8 @@ export default function ReportsClient() {
           <div>
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
               <div>
-                <h3 className="text-sm font-bold text-gray-900">Produk Terlaris</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Top produk & status ketersediaan stok.</p>
+                <h3 className="text-sm font-bold text-gray-900">{t('topSellingProductsTitle')}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{t('topSellingProductsSubtitle')}</p>
               </div>
               <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <Package size={14} />
@@ -587,7 +589,7 @@ export default function ReportsClient() {
             <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto pr-1">
               {topProducts.length === 0 ? (
                 <div className="py-8 text-center text-gray-400 text-xs">
-                  Belum ada data penjualan produk.
+                  {locale === 'EN' ? 'No product sales data yet.' : 'Belum ada data penjualan produk.'}
                 </div>
               ) : (
                 topProducts.map((product, idx) => {
@@ -614,7 +616,7 @@ export default function ReportsClient() {
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] text-emerald-600 font-medium">
-                              {product.soldCount} terjual
+                              {product.soldCount} {t('itemsSold')}
                             </span>
                             {product.stock !== undefined && (
                               <span className={`text-[9px] px-1 py-0.2 rounded font-medium ${
@@ -622,7 +624,7 @@ export default function ReportsClient() {
                                   ? 'bg-red-50 text-red-700 border border-red-200'
                                   : 'bg-gray-100 text-gray-500'
                               }`}>
-                                Sisa: {product.stock}
+                                {t('lowStockRemaining')}: {product.stock}
                               </span>
                             )}
                           </div>
@@ -642,9 +644,9 @@ export default function ReportsClient() {
           </div>
 
           <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-            <span>{topProducts.length} produk dipantau</span>
+            <span>{topProducts.length} {t('products').toLowerCase()}</span>
             <a href="/admin/products" className="text-primary-green font-semibold hover:underline flex items-center gap-0.5">
-              Katalog Produk <ArrowUpRight size={12} />
+              {t('products')} <ArrowUpRight size={12} />
             </a>
           </div>
         </div>
@@ -656,8 +658,8 @@ export default function ReportsClient() {
         <div className="bg-white p-4 rounded-xl border border-gray-200/70 shadow-xs">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Saluran Pembayaran</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Preferensi metode transaksi pelanggan.</p>
+              <h3 className="text-sm font-bold text-gray-900">{t('paymentMethodsDistributionTitle')}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{locale === 'EN' ? 'Customer checkout channel breakdown.' : 'Preferensi metode transaksi pelanggan.'}</p>
             </div>
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <CreditCard size={14} />
@@ -695,8 +697,8 @@ export default function ReportsClient() {
         <div className="bg-white p-4 rounded-xl border border-gray-200/70 shadow-xs">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Kontribusi Kategori</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Omset berdasarkan kategori produk.</p>
+              <h3 className="text-sm font-bold text-gray-900">{t('categorySalesBreakdownTitle')}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{locale === 'EN' ? 'Revenue share by product category.' : 'Omset berdasarkan kategori produk.'}</p>
             </div>
             <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
               <Layers size={14} />
@@ -711,7 +713,7 @@ export default function ReportsClient() {
                 <div key={idx} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-medium text-gray-700 truncate">{cat.category}</span>
-                    <span className="font-bold text-gray-900 font-mono">{cat.soldCount} item</span>
+                    <span className="font-bold text-gray-900 font-mono">{cat.soldCount} {t('items')}</span>
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div 
@@ -720,7 +722,7 @@ export default function ReportsClient() {
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-gray-400">
-                    <span>{percentage}% dari omset</span>
+                    <span>{percentage}% {locale === 'EN' ? 'of revenue' : 'dari omset'}</span>
                     <span className="font-mono text-gray-700 font-semibold">{formatCurrency(cat.revenue)}</span>
                   </div>
                 </div>
@@ -733,8 +735,8 @@ export default function ReportsClient() {
         <div className="bg-white p-4 rounded-xl border border-gray-200/70 shadow-xs">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Top Wilayah Pengiriman</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Sebaran lokasi pemesan terbanyak.</p>
+              <h3 className="text-sm font-bold text-gray-900">{t('topShippingDestinationsTitle')}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{locale === 'EN' ? 'Most frequent customer delivery provinces.' : 'Sebaran lokasi pemesan terbanyak.'}</p>
             </div>
             <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <MapPin size={14} />
@@ -751,7 +753,7 @@ export default function ReportsClient() {
                   <span className="font-semibold text-gray-900 truncate">{dest.province}</span>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="font-bold text-gray-900 block">{dest.orders} Order</span>
+                  <span className="font-bold text-gray-900 block">{dest.orders} {t('orders')}</span>
                   <span className="text-[10px] text-gray-400 font-mono">{formatCurrency(dest.revenue)}</span>
                 </div>
               </div>

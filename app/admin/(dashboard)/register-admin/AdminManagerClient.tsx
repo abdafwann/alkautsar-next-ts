@@ -9,8 +9,10 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@
 import { Badge } from '@/components/ui/Badge';
 import { Trash2, UserPlus, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 
 export default function AdminManagerClient() {
+  const { t, locale } = useAdminLanguage();
   const [admins, setAdmins] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +35,7 @@ export default function AdminManagerClient() {
     if (res.success) {
       setAdmins(res.data || []);
     } else {
-      toast.error(res.error || 'Gagal memuat admin');
+      toast.error(res.error || (locale === 'EN' ? 'Failed to load admins' : 'Gagal memuat admin'));
     }
     setIsLoading(false);
   };
@@ -49,10 +51,10 @@ export default function AdminManagerClient() {
     if (/\d/.test(pass)) score++;
     if (/[!@#$%^&*()_\-+={}[\]|:;"'<>,.?/~`]/.test(pass)) score++;
 
-    if (score === 0) setPasswordStrength({ score, text: 'Sangat Lemah', color: 'bg-red-500' });
-    else if (score <= 2) setPasswordStrength({ score, text: 'Lemah', color: 'bg-orange-500' });
-    else if (score === 3) setPasswordStrength({ score, text: 'Sedang', color: 'bg-yellow-500' });
-    else setPasswordStrength({ score, text: 'Kuat', color: 'bg-green-500' });
+    if (score === 0) setPasswordStrength({ score, text: locale === 'EN' ? 'Very Weak' : 'Sangat Lemah', color: 'bg-red-500' });
+    else if (score <= 2) setPasswordStrength({ score, text: locale === 'EN' ? 'Weak' : 'Lemah', color: 'bg-orange-500' });
+    else if (score === 3) setPasswordStrength({ score, text: locale === 'EN' ? 'Medium' : 'Sedang', color: 'bg-yellow-500' });
+    else setPasswordStrength({ score, text: locale === 'EN' ? 'Strong' : 'Kuat', color: 'bg-green-500' });
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +66,7 @@ export default function AdminManagerClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordStrength.score < 4) {
-      toast.error('Password belum memenuhi standar keamanan!');
+      toast.error(locale === 'EN' ? 'Password does not meet security standards!' : 'Password belum memenuhi standar keamanan!');
       return;
     }
 
@@ -78,26 +80,26 @@ export default function AdminManagerClient() {
 
     const res = await createAdmin(form);
     if (res.success) {
-      toast.success('Admin berhasil ditambahkan');
+      toast.success(locale === 'EN' ? 'Admin added successfully' : 'Admin berhasil ditambahkan');
       setFormData({ name: '', email: '', password: '', role: 'ADMIN', master_key: '' });
       setPasswordStrength({ score: 0, text: '', color: '' });
       setIsModalOpen(false);
       fetchAdmins();
     } else {
-      toast.error(res.error || 'Gagal membuat admin');
+      toast.error(res.error || (locale === 'EN' ? 'Failed to create admin' : 'Gagal membuat admin'));
     }
     setIsSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Apakah Anda yakin ingin menghapus akses admin ini?')) return;
+    if (!window.confirm(locale === 'EN' ? 'Are you sure you want to remove this admin account?' : 'Apakah Anda yakin ingin menghapus akses admin ini?')) return;
     
     const res = await deleteAdmin(id);
     if (res.success) {
-      toast.success('Admin berhasil dihapus');
+      toast.success(locale === 'EN' ? 'Admin removed successfully' : 'Admin berhasil dihapus');
       fetchAdmins();
     } else {
-      toast.error(res.error || 'Gagal menghapus admin');
+      toast.error(res.error || (locale === 'EN' ? 'Failed to delete admin' : 'Gagal menghapus admin'));
     }
   };
 
@@ -105,21 +107,21 @@ export default function AdminManagerClient() {
     <>
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Daftar Admin</h2>
+          <h2 className="text-xl font-bold text-gray-800">{t('staffList')}</h2>
           <Button onClick={() => setIsModalOpen(true)} leftIcon={<UserPlus size={18} />}>
-            Tambah Admin
+            {t('addAdmin')}
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="py-12 text-center text-gray-500">Memuat data...</div>
+          <div className="py-12 text-center text-gray-500">{t('loading')}</div>
         ) : (
           <Table>
             <TableHeader>
-              <TableHead>Nama</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+              <TableHead>{t('name')}</TableHead>
+              <TableHead>{t('email')}</TableHead>
+              <TableHead>{t('role')}</TableHead>
+              <TableHead className="text-right">{t('action')}</TableHead>
             </TableHeader>
             <TableBody>
               {admins.map((admin) => (
@@ -155,17 +157,17 @@ export default function AdminManagerClient() {
         )}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tambah Admin Baru">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('addAdmin')}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input 
-            label="Nama Lengkap" 
+            label={locale === 'EN' ? 'Full Name' : 'Nama Lengkap'} 
             placeholder="John Doe" 
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})}
             required 
           />
           <Input 
-            label="Email" 
+            label={t('email')} 
             type="email" 
             placeholder="admin@toko.com" 
             value={formData.email}
@@ -175,7 +177,7 @@ export default function AdminManagerClient() {
           
           <div className="space-y-1">
             <Input 
-              label="Password (High Security)" 
+              label={locale === 'EN' ? 'Password (High Security)' : 'Password (High Security)'} 
               type="password" 
               placeholder="••••••••" 
               value={formData.password}
@@ -193,14 +195,14 @@ export default function AdminManagerClient() {
                   ))}
                 </div>
                 <p className={`text-xs ${passwordStrength.score < 4 ? 'text-red-500' : 'text-green-600'}`}>
-                  {passwordStrength.score < 4 ? 'Wajib: Min. 8 Karakter, 1 Huruf Besar, 1 Angka, 1 Simbol' : 'Password memenuhi standar keamanan.'}
+                  {passwordStrength.score < 4 ? (locale === 'EN' ? 'Required: Min. 8 chars, 1 uppercase, 1 number, 1 special char' : 'Wajib: Min. 8 Karakter, 1 Huruf Besar, 1 Angka, 1 Simbol') : (locale === 'EN' ? 'Password meets security requirements.' : 'Password memenuhi standar keamanan.')}
                 </p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role (Peran)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('role')}</label>
             <div className="grid grid-cols-2 gap-3">
               <div 
                 className={`border p-3 rounded-xl cursor-pointer ${formData.role === 'SUPERADMIN' ? 'border-primary-green bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}
@@ -210,7 +212,7 @@ export default function AdminManagerClient() {
                   <ShieldAlert size={16} className={formData.role === 'SUPERADMIN' ? 'text-primary-green' : 'text-gray-400'} />
                   SuperAdmin
                 </div>
-                <p className="text-xs text-gray-500">Akses penuh, bisa membuat admin lain.</p>
+                <p className="text-xs text-gray-500">{locale === 'EN' ? 'Full access, can create other admins.' : 'Akses penuh, bisa membuat admin lain.'}</p>
               </div>
               <div 
                 className={`border p-3 rounded-xl cursor-pointer ${formData.role === 'ADMIN' ? 'border-primary-green bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}
@@ -220,28 +222,28 @@ export default function AdminManagerClient() {
                   <ShieldCheck size={16} className={formData.role === 'ADMIN' ? 'text-primary-green' : 'text-gray-400'} />
                   Admin
                 </div>
-                <p className="text-xs text-gray-500">Hanya kelola pesanan & produk.</p>
+                <p className="text-xs text-gray-500">{locale === 'EN' ? 'Manage orders and products only.' : 'Hanya kelola pesanan & produk.'}</p>
               </div>
             </div>
           </div>
 
           <div className="pt-2 border-t border-gray-100">
             <Input 
-              label="Kode Keamanan SuperAdmin" 
+              label={locale === 'EN' ? 'SuperAdmin Security Key' : 'Kode Keamanan SuperAdmin'} 
               type="password" 
-              placeholder="Masukkan kode master rahasia..." 
+              placeholder={locale === 'EN' ? 'Enter master secret key...' : 'Masukkan kode master rahasia...'} 
               value={formData.master_key}
               onChange={e => setFormData({...formData, master_key: e.target.value})}
               required 
             />
             <p className="text-xs text-gray-500 mt-1">
-              Sebagai lapis keamanan ekstra, pembuatan admin memerlukan PIN/Kode rahasia pemilik.
+              {locale === 'EN' ? 'As an extra security layer, creating staff admins requires the master PIN.' : 'Sebagai lapis keamanan ekstra, pembuatan admin memerlukan PIN/Kode rahasia pemilik.'}
             </p>
           </div>
 
           <div className="pt-4 flex justify-end gap-3">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button type="submit" isLoading={isSubmitting} disabled={passwordStrength.score < 4}>Simpan Admin</Button>
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>{t('cancel')}</Button>
+            <Button type="submit" isLoading={isSubmitting} disabled={passwordStrength.score < 4}>{t('save')}</Button>
           </div>
         </form>
       </Modal>

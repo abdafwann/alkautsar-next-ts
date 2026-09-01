@@ -31,7 +31,7 @@ export default async function ArticleFormPage({
   let article = null;
   if (id) {
     const res = await getArticleById(id);
-    if (res.success) {
+    if ('success' in res && res.success && 'data' in res && res.data) {
       article = res.data;
     }
   }

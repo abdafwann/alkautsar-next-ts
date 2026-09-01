@@ -30,25 +30,30 @@ export interface Category {
   name: string;
 }
 
+export interface DraftData {
+  formData: ProductFormData;
+  images: ProductImage[];
+}
+
 export interface ProductFormProps {
   initialData?: {
     id?: string;
     title?: string;
     slug?: string;
-    uses?: string;
-    price?: { toString(): string };
-    categoryId?: string;
-    productForm?: string;
-    composition?: string;
-    directions?: string;
-    warnings?: string;
-    certificate?: string;
-    quantity?: { toString(): string };
-    isPromo?: boolean;
-    promoPercentage?: { toString(): string };
-    promoPrice?: { toString(): string };
-    promoExpiry?: string;
-    images?: Array<{ publicId: string; url: string }>;
+    uses?: string | null;
+    price?: { toString(): string } | number;
+    categoryId?: string | null;
+    productForm?: string | null;
+    composition?: string | null;
+    directions?: string | null;
+    warnings?: string | null;
+    certificate?: string | null;
+    quantity?: { toString(): string } | number;
+    isPromo?: boolean | null;
+    promoPercentage?: { toString(): string } | number | null;
+    promoPrice?: { toString(): string } | number | null;
+    promoExpiry?: string | null;
+    images?: Array<{ publicId: string; url: string; [key: string]: any }>;
   } | null;
   categories: Category[];
 }

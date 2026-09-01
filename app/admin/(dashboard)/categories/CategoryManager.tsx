@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/Modal';
 import { createCategory, updateCategory, deleteCategory, getCategories, getProductsByCategory } from '@/app/actions/catalog';
 import { formatCurrency } from '@/lib/format';
 import { toast } from 'react-hot-toast';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 import type { Category, Product } from '@/types/admin';
 
 interface CategoryManagerProps {
@@ -41,19 +42,20 @@ const DUMMY_CATEGORIES: Category[] = [
   { id: 'cat-preview-006', name: 'Herbal Teh & Minuman Sehat', _count: { products: 0 } },
 ];
 
-const FILTER_TABS = [
-  { id: 'ALL', label: 'Semua Kategori' },
-  { id: 'HAS_PRODUCTS', label: 'Memiliki Produk' },
-  { id: 'EMPTY', label: 'Belum Ada Produk (0)' },
-] as const;
-
 export default function CategoryManager({ initialCategories, error }: CategoryManagerProps) {
+  const { t } = useAdminLanguage();
   const [categories, setCategories] = useState<Category[]>(
     initialCategories && initialCategories.length > 0 ? initialCategories : DUMMY_CATEGORIES
   );
   const [isUsingDummy, setIsUsingDummy] = useState(
     !initialCategories || initialCategories.length === 0
   );
+
+  const filterTabs = useMemo(() => [
+    { id: 'ALL', label: t('tabAllCategories') },
+    { id: 'HAS_PRODUCTS', label: t('tabHasProducts') },
+    { id: 'EMPTY', label: t('tabEmptyProducts') },
+  ], [t]);
 
   // Filters & State
   const [selectedTab, setSelectedTab] = useState<string>('ALL');
@@ -323,7 +325,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
             <Layers size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Total Kategori</div>
+            <div className="text-xs text-gray-400 font-medium">{t('totalCategories')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.total}</div>
           </div>
         </div>
@@ -333,7 +335,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
             <Package size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Produk Terkategori</div>
+            <div className="text-xs text-gray-400 font-medium">{t('totalLinkedProducts')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.totalProducts}</div>
           </div>
         </div>
@@ -343,7 +345,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
             <Sparkles size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Kategori Terbanyak</div>
+            <div className="text-xs text-gray-400 font-medium">{t('categoriesWithProducts')}</div>
             <div className="text-xs font-bold text-gray-900 mt-1 truncate max-w-[130px]" title={metrics.topCategory}>
               {metrics.topCategory}
             </div>
@@ -355,7 +357,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
             <AlertCircle size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Kategori Kosong</div>
+            <div className="text-xs text-gray-400 font-medium">{t('emptyCategories')}</div>
             <div className="text-xl font-bold text-amber-700 mt-0.5">{metrics.emptyCount}</div>
           </div>
         </div>
@@ -368,7 +370,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
           {/* Tab Filters */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1.5">
-              {FILTER_TABS.map((tab) => {
+              {filterTabs.map((tab) => {
                 const active = selectedTab === tab.id;
                 return (
                   <button
@@ -400,7 +402,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
               className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
             >
               <Plus size={15} />
-              <span>Tambah Kategori</span>
+              <span>{t('createNewCategory')}</span>
             </button>
           </div>
 
@@ -409,7 +411,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Cari nama kategori..."
+                placeholder={t('searchCategoriesPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -435,14 +437,14 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
                   onChange={(e) => setSortOption(e.target.value as any)}
                   className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-green cursor-pointer font-medium"
                 >
-                  <option value="name_asc">Nama Kategori (A-Z)</option>
-                  <option value="products_desc">Produk Terbanyak</option>
-                  <option value="products_asc">Produk Paling Sedikit</option>
+                  <option value="name_asc">{t('sortCategoryNameAsc')}</option>
+                  <option value="products_desc">{t('sortCategoryProductsDesc')}</option>
+                  <option value="products_asc">{t('sortCategoryProductsAsc')}</option>
                 </select>
               </div>
 
               <span className="text-xs text-gray-400">
-                Total: <strong className="text-gray-700 font-semibold">{filteredCategories.length}</strong> kategori
+                Total: <strong className="text-gray-700 font-semibold">{filteredCategories.length}</strong> {t('items')}
               </span>
             </div>
           </div>
@@ -453,9 +455,9 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Nama Kategori</th>
-                <th className="py-3 px-4">Jumlah Produk</th>
-                <th className="py-3 px-4 text-right">Opsi</th>
+                <th className="py-3 px-4">{t('categoryAndSlug')}</th>
+                <th className="py-3 px-4">{t('productCount')}</th>
+                <th className="py-3 px-4 text-right">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700">
@@ -506,25 +508,25 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
                           <button
                             onClick={() => handleOpenProductsModal(category)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
-                            title="Lihat Produk Terkait"
+                            title={t('viewProducts')}
                           >
                             <Eye size={13} />
-                            <span>Lihat</span>
+                            <span>{t('viewProducts')}</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenEditModal(category)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
-                            title="Edit Nama Kategori"
+                            title={t('edit')}
                           >
                             <Edit2 size={13} />
-                            <span>Edit</span>
+                            <span>{t('edit')}</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenDeleteModal(category)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
-                            title="Hapus Kategori"
+                            title={t('delete')}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -542,7 +544,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
         {filteredCategories.length > itemsPerPage && (
           <div className="p-3.5 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-400">
-              Menampilkan <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredCategories.length)}</span> dari <span className="font-semibold text-gray-700">{filteredCategories.length}</span> kategori
+              {t('showing')} <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredCategories.length)}</span> {t('of')} <span className="font-semibold text-gray-700">{filteredCategories.length}</span> {t('items')}
             </p>
             <div className="flex items-center gap-1.5">
               <button
@@ -573,18 +575,18 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCategory ? 'Edit Kategori Produk' : 'Tambah Kategori Baru'}
+        title={editingCategory ? t('modalEditCategoryTitle') : t('modalAddCategoryTitle')}
         maxWidth="sm"
       >
         <form onSubmit={handleSaveCategory} className="space-y-4 text-xs">
           <div>
             <label className="block text-gray-700 font-semibold mb-1">
-              Nama Kategori
+              {t('categoryNameLabel')}
             </label>
             <Input
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              placeholder="Contoh: Habbatussauda, Madu Murni..."
+              placeholder={t('categoryNamePlaceholder')}
               className="h-9 text-xs rounded-lg"
               required
               autoFocus
@@ -597,14 +599,14 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
               onClick={() => setIsModalOpen(false)}
               className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold cursor-pointer"
             >
-              Batal
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={isFormLoading || !categoryName.trim()}
               className="px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-white font-semibold cursor-pointer transition-colors disabled:opacity-50"
             >
-              {isFormLoading ? 'Menyimpan...' : editingCategory ? 'Simpan Perubahan' : 'Tambahkan'}
+              {isFormLoading ? t('loading') : editingCategory ? t('save') : t('create')}
             </button>
           </div>
         </form>
@@ -614,39 +616,35 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
       <Modal
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
-        title="Hapus Kategori"
+        title={t('deleteCategoryConfirmTitle')}
         maxWidth="md"
       >
         {deletingCategory && (
           <div className="space-y-4 text-xs">
             <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg leading-relaxed">
-              Apakah Anda yakin ingin menghapus kategori <strong className="text-gray-900 font-bold">"{deletingCategory.name}"</strong>?
+              {t('deleteCategoryDesc')}: <strong className="text-gray-900 font-bold">"{deletingCategory.name}"</strong>
             </div>
 
             {(deletingCategory._count?.products || 0) > 0 ? (
               <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg">
-                <strong>Peringatan Relasi Produk:</strong> Kategori ini memiliki{' '}
-                <strong>{deletingCategory._count?.products} produk</strong> yang masih terikat. Pindahkan atau hapus produk terkait terlebih dahulu sebelum menghapus kategori ini.
+                <strong>{t('deleteCategoryWarning')}:</strong> Kategori ini memiliki{' '}
+                <strong>{deletingCategory._count?.products} {t('products').toLowerCase()}</strong>.
               </div>
-            ) : (
-              <p className="text-gray-500 text-[11px]">
-                Kategori ini tidak memiliki produk terikat dan dapat dihapus dengan aman.
-              </p>
-            )}
+            ) : null}
 
             <div className="pt-2 flex justify-end gap-2 border-t border-gray-100">
               <button
                 onClick={() => setIsDeleteOpen(false)}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold cursor-pointer"
               >
-                Batal
+                {t('cancel')}
               </button>
               <button
                 onClick={handleDeleteCategory}
                 disabled={isDeleteLoading || (deletingCategory._count?.products || 0) > 0}
                 className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isDeleteLoading ? 'Menghapus...' : 'Ya, Hapus Kategori'}
+                {isDeleteLoading ? t('loading') : t('delete')}
               </button>
             </div>
           </div>
@@ -657,18 +655,18 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
       <Modal
         isOpen={isProductsModalOpen}
         onClose={() => setIsProductsModalOpen(false)}
-        title={`Daftar Produk: ${viewingCategory?.name || ''}`}
+        title={`${t('productsInCategoryTitle')}: ${viewingCategory?.name || ''}`}
         maxWidth="lg"
       >
         <div className="space-y-3 text-xs">
           {isLoadingProducts ? (
             <div className="py-8 text-center text-gray-400">
               <div className="w-4 h-4 border-2 border-primary-green border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <span>Memuat daftar produk dalam kategori...</span>
+              <span>{t('loading')}</span>
             </div>
           ) : categoryProducts.length === 0 ? (
             <div className="py-8 text-center text-gray-500 bg-gray-50 rounded-lg border border-gray-100">
-              Belum ada produk yang terdaftar di kategori ini.
+              {t('noProductsInCategory')}
             </div>
           ) : (
             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto pr-1">
@@ -692,7 +690,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
                     <Link href={`/admin/products/form?id=${product.id}`}>
                       <button 
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors shrink-0 cursor-pointer"
-                        title="Edit Produk"
+                        title={t('edit')}
                       >
                         <ExternalLink size={14} />
                       </button>
@@ -708,7 +706,7 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
               onClick={() => setIsProductsModalOpen(false)}
               className="px-3.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
             >
-              Tutup
+              {t('close')}
             </button>
           </div>
         </div>
