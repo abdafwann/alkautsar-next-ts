@@ -19,6 +19,15 @@
 
 # production
 /build
+/tests
+/analysis
+/docs
+docs/
+analysis/
+
+# markdown files
+*.md
+*.MD
 
 # misc
 .DS_Store
@@ -39,3 +48,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI Agent / Dev Tools
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+.agents/
+.claude/
+
+# Temporary & manual scratch scripts
+create-admin.cjs
+query-admin.js
+reset-email.js
+reset-email.ts
+# Executables / binaries
+*.exe
+cloudflared.exe
+
+

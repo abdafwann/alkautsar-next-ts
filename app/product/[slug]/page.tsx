@@ -57,19 +57,40 @@ export default async function ProductDetailPage({ params }: Props) {
     take: 5
   });
 
+  const now = new Date();
+
+  // Validasi apakah promo produk saat ini masih aktif dan belum melewati batas waktu kadaluarsa (promoExpiry)
+  const isCurrentProductPromoActive = Boolean(
+    product.isPromo &&
+    product.promoPrice &&
+    (!product.promoExpiry || new Date(product.promoExpiry) >= now)
+  );
+
   // Next.js tidak bisa mengirim objek Prisma 'Decimal' ke Client Component,
   // sehingga kita harus mengubah harganya menjadi angka biasa (plain number) terlebih dahulu.
   const serializedProduct = {
     ...product,
     price: Number(product.price),
-    promoPrice: product.promoPrice ? Number(product.promoPrice) : null,
+    promoPrice: isCurrentProductPromoActive ? Number(product.promoPrice) : null,
+    promoPercentage: isCurrentProductPromoActive ? product.promoPercentage : null,
+    isPromo: isCurrentProductPromoActive,
   };
 
-  const serializedRelatedProducts = relatedProducts.map(p => ({
-    ...p,
-    price: Number(p.price),
-    promoPrice: p.promoPrice ? Number(p.promoPrice) : null,
-  }));
+  const serializedRelatedProducts = relatedProducts.map(p => {
+    const isRelatedPromoActive = Boolean(
+      p.isPromo &&
+      p.promoPrice &&
+      (!p.promoExpiry || new Date(p.promoExpiry) >= now)
+    );
+
+    return {
+      ...p,
+      price: Number(p.price),
+      promoPrice: isRelatedPromoActive ? Number(p.promoPrice) : null,
+      promoPercentage: isRelatedPromoActive ? p.promoPercentage : null,
+      isPromo: isRelatedPromoActive,
+    };
+  });
 
   return <ProductDetailClient product={serializedProduct} relatedProducts={serializedRelatedProducts} />;
 }

@@ -2,19 +2,39 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
+import { 
+  ArrowLeft, 
+  Save, 
+  Sparkles, 
+  Tag, 
+  Package, 
+  ShieldCheck, 
+  FileText, 
+  AlertCircle, 
+  Layers, 
+  DollarSign, 
+  Percent,
+  CheckCircle2
+} from 'lucide-react';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import { saveProduct } from '@/app/actions/catalog';
-import { uploadImage } from '@/app/actions/upload';
 import { toast } from 'react-hot-toast';
-import { Upload, X } from 'lucide-react';
+import { ProductImages } from './ProductImages';
+import { PromoSettings } from './PromoSettings';
+import { 
+  type ProductFormProps, 
+  type ProductFormData, 
+  type ProductImage,
+  PRODUCT_FORM_OPTIONS,
+  DEFAULT_FORM_DATA 
+} from './types';
 
-export default function ProductForm({ initialData, categories }: { initialData?: any, categories: any[] }) {
+export default function ProductForm({ initialData, categories }: ProductFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     title: initialData?.title || '',
     slug: initialData?.slug || '',
     uses: initialData?.uses || '',
@@ -32,83 +52,54 @@ export default function ProductForm({ initialData, categories }: { initialData?:
     promoExpiry: initialData?.promoExpiry ? new Date(initialData.promoExpiry).toISOString().split('T')[0] : '',
   });
 
-  const [images, setImages] = useState<{ publicId: string, url: string }[]>(
-    initialData?.images?.map((img: any) => ({ publicId: img.publicId, url: img.url })) || []
+  const [images, setImages] = useState<ProductImage[]>(
+    initialData?.images?.map((img) => ({ publicId: img.publicId, url: img.url })) || []
   );
+
+  const handleUpdateFormData = (updates: Partial<ProductFormData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
-    // Auto generate slug if not editing or if slug is empty
-    const autoSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    setFormData({ ...formData, title, slug: autoSlug });
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const form = new FormData();
-    form.append('file', file);
-
-    try {
-      const res = await uploadImage(form);
-      if (res.success) {
-        setImages([...images, { publicId: res.data.public_id, url: res.data.secure_url }]);
-        toast.success('Gambar berhasil diunggah');
-      } else {
-        toast.error(res.error || 'Gagal mengunggah gambar');
-      }
-    } catch (error) {
-      toast.error('Terjadi kesalahan saat mengunggah');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newPrice = e.target.value;
-    let newPromoPrice = formData.promoPrice;
+    // Auto generate slug if not already customized
+    const autoSlug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
     
-    // Auto calculate if promo is active and percentage exists
-    if (formData.isPromo && formData.promoPercentage) {
-      const percentage = parseFloat(formData.promoPercentage);
-      const price = parseFloat(newPrice);
-      if (!isNaN(percentage) && !isNaN(price)) {
-        newPromoPrice = Math.round(price - (price * percentage / 100)).toString();
-      }
-    }
-    
-    setFormData({ ...formData, price: newPrice, promoPrice: newPromoPrice });
-  };
-
-  const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const percentage = e.target.value;
-    let newPromoPrice = formData.promoPrice;
-    
-    // Auto calculate based on current price
-    if (formData.price && percentage) {
-      const percVal = parseFloat(percentage);
-      const priceVal = parseFloat(formData.price);
-      if (!isNaN(percVal) && !isNaN(priceVal)) {
-        newPromoPrice = Math.round(priceVal - (priceVal * percVal / 100)).toString();
-      }
-    }
-    
-    setFormData({ ...formData, promoPercentage: percentage, promoPrice: newPromoPrice });
+    setFormData((prev) => ({
+      ...prev,
+      title,
+      slug: initialData?.slug && initialData.slug !== autoSlug ? prev.slug : autoSlug,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      toast.error('Nama produk wajib diisi');
+      return;
+    }
+
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast.error('Harga produk harus lebih dari Rp 0');
+      return;
+    }
+
+    if (formData.isPromo) {
+      if (!formData.promoPercentage || !formData.promoExpiry) {
+        toast.error('Persentase diskon dan batas tanggal promo wajib diisi jika promo aktif');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
-      // Modify promoExpiry to be 23:59:59 of that day
-      let processedPromoExpiry = null;
+      // Process promoExpiry to 23:59:59 of that day
+      let processedPromoExpiry: string | null = null;
       if (formData.isPromo && formData.promoExpiry) {
         const dateObj = new Date(formData.promoExpiry);
         dateObj.setHours(23, 59, 59, 999);
@@ -118,207 +109,235 @@ export default function ProductForm({ initialData, categories }: { initialData?:
       const res = await saveProduct(initialData?.id || null, {
         ...formData,
         promoExpiry: processedPromoExpiry,
-        images
+        images,
       });
 
       if (res.success) {
-        toast.success(initialData ? 'Produk berhasil diperbarui' : 'Produk berhasil ditambahkan');
+        toast.success(initialData ? 'Perubahan produk berhasil disimpan' : 'Produk baru berhasil ditambahkan');
         router.push('/admin/products');
         router.refresh();
       } else {
         toast.error(res.error || 'Gagal menyimpan produk');
       }
-    } catch (error) {
-      toast.error('Terjadi kesalahan pada server');
+    } catch {
+      toast.error('Terjadi kesalahan pada server saat menyimpan produk');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Input 
-          label="Nama Produk" 
-          placeholder="Misal: Habbatussauda Extra Propolis" 
-          value={formData.title}
-          onChange={handleTitleChange}
-          required 
-        />
-        <Input 
-          label="Slug (URL)" 
-          placeholder="habbatussauda-extra-propolis" 
-          value={formData.slug}
-          onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-          required 
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Input 
-          label="Harga (Rp)" 
-          type="number" 
-          placeholder="0" 
-          value={formData.price}
-          onChange={handlePriceChange}
-          required 
-        />
-        <Input 
-          label="Stok" 
-          type="number" 
-          placeholder="0" 
-          value={formData.quantity}
-          onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-          required 
-        />
-        <Select 
-          label="Kategori"
-          value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-          options={categories.map(c => ({ value: c.id, label: c.name }))}
-          required
-        />
-        <Select 
-          label="Bentuk Sediaan"
-          value={formData.productForm}
-          onChange={(e) => setFormData({ ...formData, productForm: e.target.value })}
-          options={[
-            { value: 'Kapsul', label: 'Kapsul' },
-            { value: 'Sirup', label: 'Sirup / Cair' },
-            { value: 'Serbuk', label: 'Serbuk' },
-            { value: 'Minyak', label: 'Minyak' },
-            { value: 'Lainnya', label: 'Lainnya' },
-          ]}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Gambar Produk</label>
-        <div className="flex flex-wrap gap-4 items-center">
-          {images.map((img, index) => (
-            <div key={index} className="relative w-24 h-24 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center shrink-0 group">
-              <img src={img.url} alt="Product" className="max-h-full object-contain" />
-              <button 
-                type="button"
-                onClick={() => removeImage(index)}
-                className="absolute top-1 right-1 bg-white/90 text-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-          
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-primary-green hover:text-primary-green transition-colors cursor-pointer shrink-0 bg-gray-50/50">
-            {isUploading ? (
-              <span className="text-xs font-semibold animate-pulse">Loading...</span>
-            ) : (
-              <>
-                <Upload size={20} className="mb-1" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider">Upload</span>
-              </>
-            )}
-            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
-          </label>
-        </div>
-        <p className="text-xs text-gray-400 mt-2">Format yang disarankan: JPG, PNG. Maksimal 5MB.</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <Textarea 
-          label="Khasiat / Kegunaan (Uses)" 
-          placeholder="Secara tradisional digunakan untuk..." 
-          value={formData.uses}
-          onChange={(e) => setFormData({ ...formData, uses: e.target.value })}
-          required 
-        />
-        <Textarea 
-          label="Komposisi (Composition)" 
-          placeholder="Tiap kapsul mengandung..." 
-          value={formData.composition}
-          onChange={(e) => setFormData({ ...formData, composition: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Textarea 
-          label="Aturan Pakai (Directions)" 
-          placeholder="3 x sehari 1-2 kapsul..." 
-          value={formData.directions}
-          onChange={(e) => setFormData({ ...formData, directions: e.target.value })}
-          required 
-        />
-        <Textarea 
-          label="Peringatan (Warnings)" 
-          placeholder="Tidak boleh digunakan oleh anak di bawah 2 tahun..." 
-          value={formData.warnings}
-          onChange={(e) => setFormData({ ...formData, warnings: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 border-t border-gray-100 pt-6">
-        <Input 
-          label="Nomor Izin Edar / Sertifikat (Certificate)" 
-          placeholder="POM TR. XXXXXXXX" 
-          value={formData.certificate}
-          onChange={(e) => setFormData({ ...formData, certificate: e.target.value })}
-          required 
-        />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 2-Column Master-Sidebar Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <div className="bg-green-50/50 border border-green-100 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">Pengaturan Promo</h3>
-              <p className="text-xs text-gray-500 mt-1">Aktifkan untuk memberikan diskon pada produk ini.</p>
+        {/* LEFT COLUMN: Main Product Details & Herbal Medicine Specs (7/12) */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* Card 1: Informasi Utama & Deskripsi */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200/70 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <FileText size={15} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Informasi Utama Produk</h2>
+                <p className="text-[11px] text-gray-500">Nama resmi, slug URL, dan deskripsi khasiat.</p>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={formData.isPromo}
-                onChange={(e) => setFormData({ ...formData, isPromo: e.target.checked })}
+
+            <div className="space-y-3.5">
+              <Input
+                label="Nama Produk Herbal"
+                placeholder="Contoh: Minyak Habbatussauda Extra Virgin 100ml"
+                value={formData.title}
+                onChange={handleTitleChange}
+                required
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-green"></div>
-            </label>
+
+              <div>
+                <Input
+                  label="Slug URL Produk"
+                  placeholder="minyak-habbatussauda-extra-virgin-100ml"
+                  value={formData.slug}
+                  onChange={(e) => handleUpdateFormData({ slug: e.target.value })}
+                  required
+                />
+                <div className="text-[11px] text-gray-400 font-mono mt-1 flex items-center gap-1 truncate">
+                  <span>URL Publik:</span>
+                  <span className="text-emerald-700 font-semibold truncate">/product/{formData.slug || 'slug-produk'}</span>
+                </div>
+              </div>
+
+              <Textarea
+                label="Khasiat & Manfaat Utama (Uses)"
+                placeholder="Jelaskan kegunaan klinis atau tradisional produk ini secara rinci..."
+                value={formData.uses}
+                onChange={(e) => handleUpdateFormData({ uses: e.target.value })}
+                rows={3}
+                required
+              />
+
+              <Textarea
+                label="Komposisi Bahan Herbal (Composition)"
+                placeholder="Contoh: Tiap kapsul 500mg mengandung Oleum Nigella Sativa Semen 100%..."
+                value={formData.composition}
+                onChange={(e) => handleUpdateFormData({ composition: e.target.value })}
+                rows={2}
+              />
+            </div>
           </div>
 
-          {formData.isPromo && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-              <Input 
-                label="Persentase Diskon (%)" 
-                type="number" 
-                placeholder="Misal: 10" 
-                value={formData.promoPercentage}
-                onChange={handlePercentageChange}
+          {/* Card 2: Petunjuk Medis & Peringatan */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200/70 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                <AlertCircle size={15} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Petunjuk Penggunaan & Peringatan</h2>
+                <p className="text-[11px] text-gray-500">Dosis konsumsi harian dan kontraindikasi.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3.5">
+              <Textarea
+                label="Aturan Pakai & Dosis (Directions)"
+                placeholder="Contoh: Dewasa: 2 x 2 kapsul sehari sesudah makan. Anak-anak: 1 kapsul sehari..."
+                value={formData.directions}
+                onChange={(e) => handleUpdateFormData({ directions: e.target.value })}
+                rows={2}
+                required
               />
-              <Input 
-                label="Harga Setelah Diskon (Rp)" 
-                type="number" 
-                placeholder="Otomatis dihitung" 
-                value={formData.promoPrice}
-                onChange={(e) => setFormData({ ...formData, promoPrice: e.target.value })}
-                readOnly
-                className="bg-gray-50 font-bold text-primary-green"
-              />
-              <Input 
-                label="Berlaku Sampai" 
-                type="date" 
-                value={formData.promoExpiry}
-                onChange={(e) => setFormData({ ...formData, promoExpiry: e.target.value })}
+
+              <Textarea
+                label="Peringatan & Kontraindikasi (Warnings)"
+                placeholder="Contoh: Tidak dianjurkan untuk wanita hamil trimester pertama. Simpan di tempat kering..."
+                value={formData.warnings}
+                onChange={(e) => handleUpdateFormData({ warnings: e.target.value })}
+                rows={2}
               />
             </div>
-          )}
+          </div>
+
+          {/* Card 3: Legalitas & Sertifikasi BPOM */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200/70 shadow-xs space-y-3.5">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+                <ShieldCheck size={15} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Legalitas & Sertifikasi BPOM</h2>
+                <p className="text-[11px] text-gray-500">Bukti keabsahan izin edar obat tradisional / herbal.</p>
+              </div>
+            </div>
+
+            <Input
+              label="Nomor Izin Edar / Sertifikat (Certificate)"
+              placeholder="Contoh: POM TR. 183318871 / Halal MUI No. 00140012340510"
+              value={formData.certificate}
+              onChange={(e) => handleUpdateFormData({ certificate: e.target.value })}
+              required
+            />
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Media, Pricing, Taxonomy & Promo (5/12) */}
+        <div className="lg:col-span-5 space-y-5">
+          {/* Card 4: Foto Produk */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200/70 shadow-xs">
+            <ProductImages
+              images={images}
+              onImagesChange={setImages}
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Card 5: Penetapan Harga & Stok Inventaris */}
+          <div className="bg-white p-5 rounded-xl border border-gray-200/70 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                <Package size={15} />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Harga & Inventaris Stok</h2>
+                <p className="text-[11px] text-gray-500">Harga retail normal dan jumlah stok di gudang.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Harga Normal (Rp)"
+                type="number"
+                min="0"
+                placeholder="Contoh: 85000"
+                value={formData.price}
+                onChange={(e) => handleUpdateFormData({ price: e.target.value })}
+                required
+              />
+
+              <div>
+                <Input
+                  label="Stok Gudang"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={formData.quantity}
+                  onChange={(e) => handleUpdateFormData({ quantity: e.target.value })}
+                  required
+                />
+                {parseInt(formData.quantity || '0', 10) <= 5 && (
+                  <p className="text-[10px] text-red-600 font-semibold mt-1">
+                    ⚠️ Stok kritis (≤ 5 unit)
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <Select
+                label="Kategori Produk"
+                value={formData.categoryId}
+                onChange={(e) => handleUpdateFormData({ categoryId: e.target.value })}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                required
+              />
+
+              <Select
+                label="Bentuk Sediaan"
+                value={formData.productForm}
+                onChange={(e) => handleUpdateFormData({ productForm: e.target.value })}
+                options={PRODUCT_FORM_OPTIONS.map((f) => ({ value: f.value, label: f.label }))}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Card 6: Pengaturan Promo & Flash Sale */}
+          <PromoSettings
+            formData={formData}
+            onChange={handleUpdateFormData}
+          />
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 mt-4 pt-6 border-t border-gray-100">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+      {/* Floating / Fixed Action Bar */}
+      <div className="bg-white p-4 rounded-xl border border-gray-200/70 shadow-sm flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+        >
           Batal
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          {initialData ? 'Simpan Perubahan' : 'Tambahkan Produk'}
-        </Button>
+        </button>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold px-5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <Save size={15} />
+          <span>{isLoading ? 'Menyimpan...' : initialData?.id ? 'Simpan Perubahan Produk' : 'Terbitkan Produk Baru'}</span>
+        </button>
       </div>
     </form>
   );

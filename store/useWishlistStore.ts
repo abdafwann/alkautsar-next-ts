@@ -18,6 +18,7 @@ interface WishlistStore {
   isInWishlist: (id: string) => boolean;
   toggleItem: (item: WishlistItem) => void;
   clearWishlist: () => void;
+  setWishlist: (items: WishlistItem[]) => void;
 }
 
 export const useWishlistStore = create<WishlistStore>()(
@@ -52,6 +53,8 @@ export const useWishlistStore = create<WishlistStore>()(
       },
 
       clearWishlist: () => set({ items: [] }),
+
+      setWishlist: (items) => set({ items }),
     }),
     {
       name: 'alkautsar-wishlist',

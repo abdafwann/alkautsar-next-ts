@@ -12,8 +12,8 @@ export default async function SettingsPage() {
     getBanners()
   ]);
 
-  const settings = settingsRes.success ? settingsRes.data : null;
-  const banners = bannersRes.success ? bannersRes.data : [];
+  const settings = settingsRes.success ? settingsRes.data ?? null : null;
+  const banners = bannersRes.success && bannersRes.data ? bannersRes.data : [];
 
   return <SettingsClient initialSettings={settings} initialBanners={banners} />;
 }

@@ -1,58 +1,68 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { revalidatePath, unstable_cache } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth-guard';
 
-// Mengambil StoreSettings (Karena singleton, kita ambil yang id-nya 'default')
-// Menggunakan cache agar tidak membebani database setiap kali navbar/footer di-render
-export const getStoreSettings = unstable_cache(
-  async () => {
-    try {
-      let settings = await prisma.storeSettings.findUnique({
-        where: { id: 'default' }
+// Mengambil StoreSettings (Singleton id: 'default')
+export async function getStoreSettings() {
+  try {
+    let settings = await (prisma as any).storeSettings.findUnique({
+      where: { id: 'default' }
+    });
+
+    // Jika belum ada (pertama kali aplikasi jalan), buat default
+    if (!settings) {
+      settings = await (prisma as any).storeSettings.create({
+        data: {
+          id: 'default',
+          storeName: 'PT. Al-Kautsar',
+        }
       });
-
-      // Jika belum ada (pertama kali aplikasi jalan), buat default
-      if (!settings) {
-        settings = await prisma.storeSettings.create({
-          data: {
-            id: 'default',
-            storeName: 'PT. Al-Kautsar',
-          }
-        });
-      }
-
-      return { success: true, data: settings };
-    } catch (error: any) {
-      return { success: false, error: error.message };
     }
-  },
-  ['store-settings'],
-  { revalidate: 3600, tags: ['settings'] }
-);
+
+    return { success: true, data: settings };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
 
 export async function updateStoreSettings(data: {
   storeName: string;
+  description?: string;
   email?: string;
   whatsapp?: string;
+  address?: string;
   logoUrl?: string;
   logoPublicId?: string;
 }) {
   try {
-    const settings = await prisma.storeSettings.upsert({
+    await requireAdmin();
+
+    const payload = {
+      storeName: data.storeName,
+      description: data.description || null,
+      email: data.email || null,
+      whatsapp: data.whatsapp || null,
+      address: data.address || null,
+      logoUrl: data.logoUrl || null,
+      logoPublicId: data.logoPublicId || null,
+    };
+
+    const settings = await (prisma as any).storeSettings.upsert({
       where: { id: 'default' },
-      update: data,
+      update: payload,
       create: {
         id: 'default',
-        ...data
+        ...payload,
       }
     });
 
-    revalidatePath('/', 'layout'); // Revalidate semua route agar logo/nama baru ter-apply
+    revalidatePath('/', 'layout');
     revalidatePath('/admin/settings');
     
     return { success: true, data: settings };
   } catch (error: any) {
-    return { success: false, error: 'Gagal memperbarui pengaturan toko.' };
+    return { success: false, error: error.message || 'Gagal memperbarui pengaturan toko.' };
   }
 }

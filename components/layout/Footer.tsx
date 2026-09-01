@@ -22,6 +22,34 @@ export default function Footer() {
             <p className="text-sm text-gray-300 leading-relaxed">
               Our mission is engaged to evaluate quality and promote our herbal and traditional medicine.
             </p>
+            <div className="mt-6">
+              <span className="text-xs font-semibold text-gray-300 block mb-2.5 uppercase tracking-wider">
+                Sertifikasi Resmi:
+              </span>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="group w-14 h-14 bg-white rounded-xl flex items-center justify-center p-2 shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden"
+                  title="Sertifikasi Resmi BPOM Republik Indonesia"
+                >
+                  <img
+                    src="/BPOM Logo - Colored - zonalogo.com.svg"
+                    alt="Sertifikasi BPOM RI"
+                    className="w-auto max-h-7 object-contain transition-transform duration-300 ease-out group-hover:scale-115"
+                  />
+                </div>
+                <div 
+                  className="group w-14 h-14 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden"
+                  title="Sertifikasi Resmi Halal Indonesia - BPJPH Kemenag"
+                >
+                  <img
+                    src="/Halal Indonesia Logo - Colored - zonalogo.com.svg"
+                    alt="Sertifikasi Halal Indonesia"
+                    className="w-auto max-h-9 object-contain transition-transform duration-300 ease-out group-hover:scale-115"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="mt-6 flex gap-2">
               <img alt="Visa" className="h-6 bg-white rounded px-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJrIr2GVV4pj0u-9RsNXpcBu8LeXjEtlOzkIDNp80DVlnsBmIv2tu8ERUnwzzbP4Rfj6kZp0D6zJ8ZJyLQDXKVQ5PzjClRODH7AwCLleY6iN1e2bW-gPiMbG8VHU9y9EvQNMTupDfn2ADBEvACLr9bFen0mi3b6FuptRWGIZh_B6xLreks3pETas0uJBiehudRZSk3NdYzIncMZiP8oysmw81UnHtj8QDR7rE_qFR3vhZnog8BRyhV" />
               <img alt="Mastercard" className="h-6 bg-white rounded px-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiibjtZQ6N4TAh2FPYcksK249qlzCT00H3jUP62jg5eNGufh2SPv1Wo1_TvRHJtEKAGCg_JrGjss5isOHU6X0syyIbB2XBbaxtnAjCegbWyHn44ar694cYgnmsqVTmNmMQmiUBkGG-LyHvEj01Sew0Ef0nP3md-6aeeWMv5E0QU9y4nCCEfkWpf1-9AER1YPvsIZy8tj1qjtVumg22_tRHouYb-vIuqAeMWb_4Rq3jOaape0nJlauO" />

@@ -1,9 +1,9 @@
 import React from 'react';
 
-export function Table({ children, className = '' }: { children: React.ReactNode, className?: string }) {
+export function Table({ children, className = '', tableClassName = '' }: { children: React.ReactNode, className?: string, tableClassName?: string }) {
   return (
     <div className={`overflow-x-auto rounded-2xl border border-gray-100 shadow-sm bg-white ${className}`}>
-      <table className="w-full text-left text-sm text-gray-600">
+      <table className={`w-full text-left text-sm text-gray-600 ${tableClassName}`}>
         {children}
       </table>
     </div>

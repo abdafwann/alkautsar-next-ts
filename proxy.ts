@@ -2,15 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const secretKey = process.env.JWT_SECRET || 'alkautsar-super-secret-key-2026';
-const key = new TextEncoder().encode(secretKey);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET || 'development-fallback-secret-key-32-chars-long';
+  return new TextEncoder().encode(secret);
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect /admin routes
+  // Protect /admin routes against unauthenticated access
   if (pathname.startsWith('/admin')) {
-    // Exclude /admin/login from the protection check
+    // Whitelist login route
     if (pathname === '/admin/login') {
       return NextResponse.next();
     }
@@ -22,16 +24,9 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-      // Verify token
-      const verified = await jwtVerify(token, key);
-      // Optional: you can attach user info to headers if needed
-      // const response = NextResponse.next();
-      // response.headers.set('x-admin-email', verified.payload.email as string);
-      // return response;
+      await jwtVerify(token, getJwtSecret());
       return NextResponse.next();
-    } catch (err) {
-      console.error('Invalid token in middleware');
-      // Token is invalid or expired
+    } catch (_err) {
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
       response.cookies.delete('admin_session');
       return response;

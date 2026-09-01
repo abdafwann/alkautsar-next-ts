@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Minus, Plus, ShoppingCart, Heart, Zap } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
@@ -22,13 +22,20 @@ interface ProductActionsProps {
 export default function ProductActions({ product }: ProductActionsProps) {
   const [qty, setQty] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Only access stores after mounting to avoid hydration mismatch
   const addItem = useCartStore((s) => s.addItem);
   const wishlistItems = useWishlistStore((s) => s.items);
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
 
-  const isWishlisted = wishlistItems.some((item) => item.id === product.id);
+  // Always use false during SSR, actual value after mount
+  const isWishlisted = mounted ? wishlistItems.some((item) => item.id === product.id) : false;
   const stock = product.quantity;
   const currentPrice = product.promoPrice ? product.promoPrice : product.price;
 
@@ -140,7 +147,13 @@ export default function ProductActions({ product }: ProductActionsProps) {
       {/* Wishlist */}
       <div className="mt-4 flex justify-center">
         <button 
-          onClick={() => toggleWishlist(product)}
+          onClick={() => toggleWishlist({
+            id: product.id,
+            title: product.title,
+            price: currentPrice,
+            imageUrl: product.image,
+            slug: product.slug || '',
+          })}
           className={`flex items-center gap-2 text-sm font-semibold transition-colors ${
             isWishlisted ? 'text-red-500' : 'text-gray-500 hover:text-gray-800'
           }`}
