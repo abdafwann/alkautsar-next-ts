@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { id, enUS } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { Customer } from '@/types/admin';
 
 // Realistic preview data when database has 0 customer records
@@ -389,14 +390,38 @@ export default function CustomerListClient() {
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-400 text-xs">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-primary-green border-t-transparent rounded-full animate-spin"></div>
-                      <span>Memuat data pelanggan...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2.5">
+                        <Skeleton className="w-7 h-7 rounded-md shrink-0" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-2.5 w-40" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Skeleton className="h-3 w-20 mb-1" />
+                      <Skeleton className="h-2.5 w-16" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <Skeleton className="h-3 w-12" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <Skeleton className="h-3 w-24" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <Skeleton className="h-5 w-16 rounded-md" />
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <Skeleton className="h-6 w-14 rounded-md" />
+                        <Skeleton className="h-6 w-14 rounded-md" />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : paginatedCustomers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-gray-400 text-xs">

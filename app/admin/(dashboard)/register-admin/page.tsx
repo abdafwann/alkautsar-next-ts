@@ -2,6 +2,16 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import AdminManagerClient from './AdminManagerClient';
+import AdminPageErrorBoundary from '../_components/AdminPageErrorBoundary';
+import { ShieldAlert } from 'lucide-react';
+import { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Manajemen Staff & RBAC | Admin Al-Kautsar',
+  description: 'Kelola hak akses dan peran administrator toko herbal',
+};
 
 const secretKey = process.env.JWT_SECRET;
 
@@ -23,35 +33,30 @@ export default async function AdminsPage() {
     const verified = await jwtVerify(token, key);
     const adminEmail = verified.payload.email as string;
     
-    // Check actual role from DB to avoid legacy token issues
+    // Direct database role check guarantees live permission revocation without stale JWT payload
     const { prisma } = await import('@/lib/prisma');
     const admin = await prisma.admin.findUnique({ where: { email: adminEmail } });
     
     if (!admin || admin.role !== 'SUPERADMIN') {
       return (
-        <div className="flex flex-col items-center justify-center h-[60vh]">
-          <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-3.5 border border-red-100 shadow-xs">
+            <ShieldAlert size={28} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Akses Ditolak</h1>
-          <p className="text-gray-500">Hanya SuperAdmin yang dapat mengakses halaman ini.</p>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Akses Terbatas</h2>
+          <p className="text-xs text-gray-500 max-w-sm">
+            Halaman manajemen administrator dan hak akses RBAC hanya dapat dibuka oleh akun dengan role <strong>SuperAdmin</strong>.
+          </p>
         </div>
       );
     }
-  } catch (error) {
+  } catch {
     redirect('/admin/login');
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Manajemen Admin</h1>
-        <p className="text-gray-500 mt-2">Kelola akses pengguna ke panel admin.</p>
-      </div>
-
+    <AdminPageErrorBoundary>
       <AdminManagerClient />
-    </div>
+    </AdminPageErrorBoundary>
   );
 }
