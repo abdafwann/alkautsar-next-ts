@@ -7,6 +7,7 @@ import { X, Search, Store, BookOpen, Heart, Package, User } from 'lucide-react';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
 import { Category, User as UserType } from './types';
+import { Logo } from './Logo';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -16,6 +17,10 @@ interface MobileMenuProps {
   onLogout: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  storeSettings?: {
+    storeName?: string | null;
+    logoUrl?: string | null;
+  } | null;
 }
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
@@ -170,6 +175,7 @@ export function MobileMenu({
   onLogout,
   searchQuery,
   setSearchQuery,
+  storeSettings,
 }: MobileMenuProps) {
   const router = useRouter();
   const wishlistItems = useWishlistStore((s) => s.items);
@@ -196,12 +202,12 @@ export function MobileMenu({
       <div className="relative w-[85%] max-w-sm bg-white h-full shadow-2xl flex flex-col overflow-hidden ml-auto">
         {/* Header */}
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <div className="flex items-center gap-2 text-accent-gold font-bold">
-            <i className="fas fa-mortar-pestle text-xl"></i> PT. AL-KAUTSAR
+          <div onClick={onClose} className="scale-90 origin-left">
+            <Logo storeName={storeSettings?.storeName} logoUrl={storeSettings?.logoUrl} />
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 bg-white rounded-full shadow-sm border border-gray-100"
+            className="text-gray-400 hover:text-gray-600 p-1.5 bg-white rounded-xl shadow-xs border border-gray-100 cursor-pointer"
           >
             <X size={18} strokeWidth={2} />
           </button>

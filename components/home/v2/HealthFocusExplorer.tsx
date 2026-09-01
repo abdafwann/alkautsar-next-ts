@@ -29,6 +29,7 @@ function formatRupiah(price: number): string {
 }
 
 export default function HealthFocusExplorer({ categories = [], products = [] }: HealthFocusExplorerProps) {
+  const [mounted, setMounted] = useState(false);
   const [selectedId, setSelectedId] = useState('all');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -38,6 +39,10 @@ export default function HealthFocusExplorer({ categories = [], products = [] }: 
   const toggleWishlist = useWishlistStore((s) => s.toggleItem);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
   const now = new Date();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Combine "All" with real database categories
   const tabList = [
@@ -241,7 +246,7 @@ export default function HealthFocusExplorer({ categories = [], products = [] }: 
             const isPromoValid = product.promoPrice && product.promoPrice > 0 && (!product.promoExpiry || new Date(product.promoExpiry) >= now);
             const displayPrice = isPromoValid ? product.promoPrice : product.price;
             const discountPercent = isPromoValid ? Math.round(((product.price - product.promoPrice) / product.price) * 100) : 0;
-            const isWishlisted = isInWishlist(product.id);
+            const isWishlisted = mounted ? isInWishlist(product.id) : false;
             const productName = product.title || product.name;
 
             return (

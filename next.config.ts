@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
-    'greetings-relative-mold-sets.trycloudflare.com',
+    'books-streams-designation-shots.trycloudflare.com',
     '*.trycloudflare.com',
     'localhost:3000',
   ],
@@ -33,7 +34,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        'greetings-relative-mold-sets.trycloudflare.com',
+        'books-streams-designation-shots.trycloudflare.com',
         '*.trycloudflare.com',
         'localhost:3000',
       ],

@@ -75,8 +75,8 @@ export default async function ContactPage() {
               </div>
               <div>
                 <h4 className="text-[11px] font-bold tracking-widest uppercase text-gray-400 mb-1">Lokasi Kami</h4>
-                <p className="text-gray-900 text-lg font-medium">
-                  {'Pusat Perbelanjaan, Kota Anda'}
+                <p className="text-gray-900 text-lg font-medium whitespace-pre-line">
+                  {storeData?.address || 'Jl. Herbal Alami No. 123, Jakarta Selatan, 12345'}
                 </p>
               </div>
             </div>

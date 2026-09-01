@@ -61,6 +61,8 @@ create-admin.cjs
 query-admin.js
 reset-email.js
 reset-email.ts
-test.js
+# Executables / binaries
+*.exe
+cloudflared.exe
 
 

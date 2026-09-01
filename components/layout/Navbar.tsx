@@ -25,12 +25,19 @@ import {
   DropdownType,
 } from './Navbar/index';
 
+interface NavbarProps {
+  storeSettings?: {
+    storeName?: string | null;
+    logoUrl?: string | null;
+  } | null;
+}
+
 /**
  * Main Navbar Orchestrator.
  * Hierarchical order: Kategori -> Shop -> Artikel -> Cart -> Wishlist -> Profile.
  * Fully stabilized layout to prevent any jitter or layout shifts on hover.
  */
-export default function Navbar() {
+export default function Navbar({ storeSettings }: NavbarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -106,7 +113,10 @@ export default function Navbar() {
           
           {/* 1. Brand Logo (Fixed Shrink-0) */}
           <div className="shrink-0">
-            <Logo />
+            <Logo 
+              storeName={storeSettings?.storeName} 
+              logoUrl={storeSettings?.logoUrl} 
+            />
           </div>
 
           {/* 2. Live Search Input (Desktop - Stabilized Width) */}
@@ -214,6 +224,7 @@ export default function Navbar() {
         onLogout={handleLogout}
         searchQuery={mobileSearchQuery}
         setSearchQuery={setMobileSearchQuery}
+        storeSettings={storeSettings}
       />
     </header>
   );

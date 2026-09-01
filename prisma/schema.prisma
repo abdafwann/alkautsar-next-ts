@@ -187,8 +187,10 @@ enum PaymentStatus {
 model StoreSettings {
   id           String   @id @default("default")
   storeName    String   @default("PT. Al-Kautsar")
+  description  String?
   email        String?
   whatsapp     String?
+  address      String?
   logoUrl      String?
   logoPublicId String?
   updatedAt    DateTime @updatedAt

@@ -11,6 +11,7 @@ interface StoreSettings {
   address: string | null;
   email: string | null;
   whatsapp: string | null;
+  logoUrl?: string | null;
   facebook: string | null;
   instagram: string | null;
   twitter: string | null;
@@ -31,6 +32,7 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
 
   // Fallbacks
   const storeName = settings?.storeName || 'PT. AL-KAUTSAR';
+  const logoUrl = settings?.logoUrl;
   const description = settings?.description || 'Menyediakan akses ke obat alami, herbal, dan tradisional berstandar resmi BPOM untuk kebugaran keseharian Anda.';
   const address = settings?.address || 'Jl. Herbal Alami No. 123\nJakarta Selatan, 12345';
   const email = settings?.email || 'hello@alkautsar.com';
@@ -43,11 +45,15 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
           
           {/* Brand & Contact Column */}
           <div className="lg:col-span-4 lg:pr-12">
-            <h4 className="text-xl font-heading font-extrabold mb-6 tracking-tight flex items-center gap-2 text-white">
-              <i className="fas fa-leaf text-primary-green text-lg"></i>
-              {storeName}
+            <h4 className="text-xl font-heading font-extrabold mb-6 tracking-tight flex items-center gap-2.5 text-white">
+              {logoUrl ? (
+                <img src={logoUrl} alt={storeName} className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert" />
+              ) : (
+                <i className="fas fa-leaf text-primary-green text-lg"></i>
+              )}
+              <span>{storeName}</span>
             </h4>
-            <p className="text-sm text-gray-300 mb-8 leading-relaxed max-w-[32ch]">
+            <p className="text-sm text-gray-300 mb-8 leading-relaxed whitespace-pre-line max-w-sm">
               {description}
             </p>
             
