@@ -26,6 +26,7 @@ import { createCategory, updateCategory, deleteCategory, getCategories, getProdu
 import { formatCurrency } from '@/lib/format';
 import { toast } from 'react-hot-toast';
 import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 import type { Category, Product } from '@/types/admin';
 
 interface CategoryManagerProps {
@@ -660,9 +661,19 @@ export default function CategoryManager({ initialCategories, error }: CategoryMa
       >
         <div className="space-y-3 text-xs">
           {isLoadingProducts ? (
-            <div className="py-8 text-center text-gray-400">
-              <div className="w-4 h-4 border-2 border-primary-green border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <span>{t('loading')}</span>
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="py-2.5 flex items-center justify-between gap-3 animate-pulse border-b border-gray-50">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
+                    <div className="space-y-1 flex-1">
+                      <Skeleton className="h-3 w-40" />
+                      <Skeleton className="h-2.5 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="w-6 h-6 rounded-md shrink-0" />
+                </div>
+              ))}
             </div>
           ) : categoryProducts.length === 0 ? (
             <div className="py-8 text-center text-gray-500 bg-gray-50 rounded-lg border border-gray-100">

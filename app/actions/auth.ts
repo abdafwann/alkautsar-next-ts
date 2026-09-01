@@ -7,7 +7,13 @@ import { SignJWT } from 'jose';
 import { checkRateLimit } from '@/lib/rateLimitWrapper';
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || 'development-fallback-secret-key-32-chars-long';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production');
+    }
+    return new TextEncoder().encode('development-fallback-secret-key-32-chars-long');
+  }
   return new TextEncoder().encode(secret);
 }
 

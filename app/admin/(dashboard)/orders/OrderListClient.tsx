@@ -25,10 +25,12 @@ import {
   ExternalLink,
   Printer,
   MessageCircle,
-  PackageCheck
+  PackageCheck,
+  Tag
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const STATUS_TABS = [
   { id: 'ALL', label: { ID: 'Semua', EN: 'All' } },
@@ -358,9 +360,62 @@ export default function OrderListClient({
         {/* Table Content */}
         <div className="p-6">
           {isLoading ? (
-            <div className="py-20 text-center text-gray-500 flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-xs font-medium">{locale === 'EN' ? 'Loading orders...' : 'Memuat data pesanan...'}</p>
+            <div className="overflow-x-auto">
+              <Table tableClassName="table-fixed min-w-[800px] w-full">
+                <TableHeader>
+                  <TableHead className="w-[22%] text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'ORDER ID' : 'ID PESANAN'}
+                  </TableHead>
+                  <TableHead className="w-[18%] text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'DATE' : 'TANGGAL'}
+                  </TableHead>
+                  <TableHead className="w-[20%] text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'CUSTOMER' : 'PELANGGAN'}
+                  </TableHead>
+                  <TableHead className="w-[15%] text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'TOTAL' : 'TOTAL'}
+                  </TableHead>
+                  <TableHead className="w-[15%] text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'STATUS' : 'STATUS'}
+                  </TableHead>
+                  <TableHead className="w-[10%] text-right text-xs font-semibold text-gray-500">
+                    {locale === 'EN' ? 'ACTION' : 'AKSI'}
+                  </TableHead>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i} className="animate-pulse">
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Skeleton className="h-3.5 w-32" />
+                          <Skeleton className="h-2.5 w-20" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Skeleton className="h-3.5 w-24" />
+                          <Skeleton className="h-2.5 w-16" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Skeleton className="h-3.5 w-28" />
+                          <Skeleton className="h-2.5 w-36" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="h-7 w-16 rounded-xl ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : orders.length === 0 ? (
             <div className="py-20 text-center flex flex-col items-center">
@@ -744,6 +799,19 @@ export default function OrderListClient({
                   >
                     <MessageCircle size={13} className="text-emerald-600" />
                     <span>{locale === 'EN' ? 'Chat WhatsApp' : 'Chat WA'}</span>
+                  </a>
+                )}
+
+                {['PROCESSING', 'PREPARING', 'IN_DELIVERY', 'DELIVERED', 'COMPLETED'].includes(selectedOrder.status) && (
+                  <a
+                    href={`/shipping-label/${selectedOrder.orderId || selectedOrder.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold transition-colors border border-gray-200 shadow-2xs"
+                    title={locale === 'EN' ? 'Print Thermal Shipping Label (A6)' : 'Cetak Label Resi Pengiriman (Thermal A6)'}
+                  >
+                    <Tag size={13} className="text-gray-600" />
+                    <span>{locale === 'EN' ? 'Shipping Label' : 'Label Resi'}</span>
                   </a>
                 )}
 

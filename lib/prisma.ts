@@ -5,13 +5,13 @@ import { AsyncLocalStorage } from 'async_hooks';
 
 const connectionString = process.env.DATABASE_URL!;
 
-// Configure connection pool with sensible limits to prevent connection exhaustion
+// Configure connection pool with conservative per-worker limits (max 3) so concurrent Next.js build workers (11x) never exhaust database pool limits
 const pool = new Pool({
   connectionString,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-  max: 10, // Maintain max 10 active connections per worker
-  idleTimeoutMillis: 30000, // Close idle connections after 30s
-  connectionTimeoutMillis: 5000, // Fail fast if DB is unreachable after 5s
+  max: 3, // Conservative 3 connections per worker thread prevents connection spikes during parallel builds
+  idleTimeoutMillis: 10000, // Quickly reclaim idle connections within 10s
+  connectionTimeoutMillis: 5000, // Fail fast if database is unreachable after 5s
 });
 
 const adapter = new PrismaPg(pool);
