@@ -26,8 +26,9 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { deleteArticle, getArticles } from '@/app/actions/articles';
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { id as idLocale, enUS } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 
 interface Article {
   id: string;
@@ -60,49 +61,41 @@ const DUMMY_ARTICLES: Article[] = [
   },
   {
     id: 'art-preview-002',
-    title: 'Cara Membedakan Madu Murni Asli vs Madu Oplosan dengan Uji Sederhana',
-    slug: 'cara-membedakan-madu-murni-asli-vs-oplosan',
-    content: 'Madu murni memiliki karakteristik kekentalan dan kadar enzim diastase alami yang khas...',
+    title: 'Mengenal Khasiat Madu Murni Randu untuk Kesehatan Lambung & Pencernaan',
+    slug: 'khasiat-madu-murni-randu-pencernaan',
+    content: 'Madu randu asli kaya akan enzim diastase alami yang membantu meredakan inflamasi mukosa lambung...',
     imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300&auto=format&fit=crop&q=80',
     isPublished: true,
-    topic: 'Tips Kesehatan',
-    createdAt: '2026-08-20T14:15:00.000Z',
+    topic: 'Herbal & Madu',
+    createdAt: '2026-08-18T14:15:00.000Z',
   },
   {
     id: 'art-preview-003',
-    title: 'Khasiat Daun Bidara Arab untuk Terapi Ruqyah dan Kesehatan Kulit',
-    slug: 'khasiat-daun-bidara-arab-terapi-kesehatan',
-    content: 'Daun bidara (Ziziphus mauritiana) kaya akan flavonoid dan senyawa antibakteri alami...',
+    title: 'Panduan Praktis Penggunaan Daun Bidara untuk Terapi Ruqyah & Mandi Herbal',
+    slug: 'panduan-praktis-daun-bidara-terapi-ruqyah',
+    content: 'Daun bidara (Sidr) memiliki kedudukan istimewa dalam pengobatan herbal sunnah...',
     imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80',
-    isPublished: false,
-    topic: 'Herbal Nabawi',
-    createdAt: '2026-08-15T09:00:00.000Z',
-  },
-  {
-    id: 'art-preview-004',
-    title: 'Panduan Konsumsi Minyak Zaitun Extra Virgin yang Benar Menurut Sunnah',
-    slug: 'panduan-konsumsi-minyak-zaitun-extra-virgin',
-    content: 'Minyak zaitun merupakan pohon yang diberkahi sebagaimana disebutkan dalam Al-Qur\'an...',
-    imageUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&auto=format&fit=crop&q=80',
-    isPublished: true,
-    topic: 'Sunnah & Herbal',
-    createdAt: '2026-08-10T11:45:00.000Z',
+    isPublished: false, // Draft
+    topic: 'Edukasi Sunnah',
+    createdAt: '2026-08-28T09:00:00.000Z',
   },
 ];
 
-const FILTER_TABS = [
-  { id: 'ALL', label: 'Semua Artikel' },
-  { id: 'PUBLISHED', label: 'Dipublikasi' },
-  { id: 'DRAFT', label: 'Draf' },
-] as const;
-
 export default function ArticleListClient({ initialArticles, error }: ArticleListClientProps) {
+  const { t, locale } = useAdminLanguage();
+  const dateLocale = locale === 'EN' ? enUS : idLocale;
   const [articles, setArticles] = useState<Article[]>(
     initialArticles && initialArticles.length > 0 ? initialArticles : DUMMY_ARTICLES
   );
   const [isUsingDummy, setIsUsingDummy] = useState(
     !initialArticles || initialArticles.length === 0
   );
+
+  const filterTabs = useMemo(() => [
+    { id: 'ALL', label: locale === 'EN' ? 'All Articles' : 'Semua Artikel' },
+    { id: 'PUBLISHED', label: locale === 'EN' ? 'Published' : 'Terbit' },
+    { id: 'DRAFT', label: locale === 'EN' ? 'Draft' : 'Draf' },
+  ], [locale]);
 
   // Filters & State
   const [selectedTab, setSelectedTab] = useState<string>('ALL');
@@ -195,15 +188,15 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
     setIsDeleting(true);
     try {
       const res = await deleteArticle(deletingArticle.id);
-      if (res && res.success) {
-        toast.success('Artikel berhasil dihapus');
+      if (res && 'success' in res && res.success) {
+        toast.success(locale === 'EN' ? 'Article deleted successfully' : 'Artikel berhasil dihapus');
         setArticles(prev => prev.filter(a => a.id !== deletingArticle.id));
         setIsDeleteOpen(false);
       } else {
-        toast.error(res?.error || 'Gagal menghapus artikel');
+        toast.error((res as any)?.error || (locale === 'EN' ? 'Failed to delete article' : 'Gagal menghapus artikel'));
       }
     } catch {
-      toast.error('Terjadi kesalahan saat menghapus artikel');
+      toast.error(locale === 'EN' ? 'Error deleting article' : 'Terjadi kesalahan saat menghapus artikel');
     } finally {
       setIsDeleting(false);
     }
@@ -253,7 +246,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
             <Eye size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Dipublikasi</div>
+            <div className="text-xs text-gray-400 font-medium">{locale === 'EN' ? 'Published' : 'Dipublikasi'}</div>
             <div className="text-xl font-bold text-emerald-700 mt-0.5">{metrics.publishedCount}</div>
           </div>
         </div>
@@ -263,7 +256,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
             <Clock size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Draf Belum Rilis</div>
+            <div className="text-xs text-gray-400 font-medium">{locale === 'EN' ? 'Unreleased Drafts' : 'Draf Belum Rilis'}</div>
             <div className="text-xl font-bold text-amber-700 mt-0.5">{metrics.draftCount}</div>
           </div>
         </div>
@@ -273,7 +266,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
             <Layers size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Topik / Rubrik</div>
+            <div className="text-xs text-gray-400 font-medium">{locale === 'EN' ? 'Topics' : 'Topik / Rubrik'}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.topicCount}</div>
           </div>
         </div>
@@ -286,7 +279,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
           {/* Tab Filters */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1.5">
-              {FILTER_TABS.map((tab) => {
+              {filterTabs.map((tab) => {
                 const active = selectedTab === tab.id;
                 return (
                   <button
@@ -323,7 +316,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
               className="inline-flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
             >
               <Plus size={15} />
-              <span>Tulis Artikel Baru</span>
+              <span>{t('createNewArticle')}</span>
             </Link>
           </div>
 
@@ -332,7 +325,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Cari judul, topik, atau slug..."
+                placeholder={t('searchArticlesPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -358,14 +351,14 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
                   onChange={(e) => setSortOption(e.target.value as any)}
                   className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-green cursor-pointer font-medium"
                 >
-                  <option value="newest">Tanggal Rilis (Terbaru)</option>
-                  <option value="oldest">Tanggal Rilis (Terlama)</option>
-                  <option value="title_asc">Judul Artikel (A-Z)</option>
+                  <option value="newest">{t('sortNewest')}</option>
+                  <option value="oldest">{t('sortOldest')}</option>
+                  <option value="title_asc">A - Z</option>
                 </select>
               </div>
 
               <span className="text-xs text-gray-400">
-                Total: <strong className="text-gray-700 font-semibold">{filteredArticles.length}</strong> artikel
+                Total: <strong className="text-gray-700 font-semibold">{filteredArticles.length}</strong> {t('articles').toLowerCase()}
               </span>
             </div>
           </div>
@@ -376,24 +369,24 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Artikel & Sampul</th>
-                <th className="py-3 px-4">Topik</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Tanggal Rilis</th>
-                <th className="py-3 px-4 text-right">Opsi</th>
+                <th className="py-3 px-4">{t('articles')}</th>
+                <th className="py-3 px-4">{locale === 'EN' ? 'Topic' : 'Topik'}</th>
+                <th className="py-3 px-4">{t('status')}</th>
+                <th className="py-3 px-4">{locale === 'EN' ? 'Publish Date' : 'Tanggal Rilis'}</th>
+                <th className="py-3 px-4 text-right">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700">
               {paginatedArticles.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-400 text-xs">
-                    {searchTerm ? 'Tidak ada artikel yang cocok dengan pencarian.' : 'Belum ada artikel yang ditulis.'}
+                    {searchTerm ? (locale === 'EN' ? 'No articles match your search.' : 'Tidak ada artikel yang cocok dengan pencarian.') : (locale === 'EN' ? 'No articles yet.' : 'Belum ada artikel yang ditulis.')}
                   </td>
                 </tr>
               ) : (
                 paginatedArticles.map((article) => {
                   const image = article.imageUrl || 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&auto=format&fit=crop&q=80';
-                  const formattedDate = format(new Date(article.createdAt), "dd MMM yyyy", { locale: idLocale });
+                  const formattedDate = format(new Date(article.createdAt), "dd MMM yyyy", { locale: dateLocale });
 
                   return (
                     <tr key={article.id} className="hover:bg-gray-50/50 transition-colors">
@@ -417,7 +410,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
                       {/* Topic Badge */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-md">
-                          <BookOpen size={11} /> {article.topic || 'Edukasi Herbal'}
+                          <BookOpen size={11} /> {article.topic || (locale === 'EN' ? 'General' : 'Edukasi Herbal')}
                         </span>
                       </td>
 
@@ -425,11 +418,11 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
                       <td className="py-3 px-4 whitespace-nowrap">
                         {article.isPublished ? (
                           <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold px-2 py-0.5 rounded-md">
-                            <CheckCircle2 size={11} className="text-emerald-600" /> Dipublikasi
+                            <CheckCircle2 size={11} className="text-emerald-600" /> {locale === 'EN' ? 'Published' : 'Dipublikasi'}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold px-2 py-0.5 rounded-md">
-                            <Clock size={11} className="text-amber-600" /> Draf
+                            <Clock size={11} className="text-amber-600" /> {locale === 'EN' ? 'Draft' : 'Draf'}
                           </span>
                         )}
                       </td>
@@ -446,25 +439,25 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
                             href={`/blog/${article.slug}`}
                             target="_blank"
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
-                            title="Buka Artikel di Website"
+                            title={locale === 'EN' ? 'Open in public site' : 'Buka Artikel di Website'}
                           >
                             <ExternalLink size={13} />
-                            <span>Lihat</span>
+                            <span>{t('view')}</span>
                           </Link>
 
                           <Link
                             href={`/admin/articles/form?id=${article.id}`}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
-                            title="Edit Artikel"
+                            title={locale === 'EN' ? 'Edit Article' : 'Edit Artikel'}
                           >
                             <Edit2 size={13} />
-                            <span>Edit</span>
+                            <span>{t('edit')}</span>
                           </Link>
 
                           <button
                             onClick={() => handleOpenDelete(article)}
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
-                            title="Hapus Artikel"
+                            title={locale === 'EN' ? 'Delete Article' : 'Hapus Artikel'}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -482,7 +475,7 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
         {filteredArticles.length > itemsPerPage && (
           <div className="p-3.5 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-400">
-              Menampilkan <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredArticles.length)}</span> dari <span className="font-semibold text-gray-700">{filteredArticles.length}</span> artikel
+              {t('showing')} <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredArticles.length)}</span> {t('of')} <span className="font-semibold text-gray-700">{filteredArticles.length}</span> {t('articles').toLowerCase()}
             </p>
             <div className="flex items-center gap-1.5">
               <button
@@ -513,16 +506,20 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
       <Modal
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
-        title="Hapus Artikel Blog"
+        title={locale === 'EN' ? 'Delete Blog Article' : 'Hapus Artikel Blog'}
         maxWidth="md"
       >
         {deletingArticle && (
           <div className="space-y-4 text-xs">
             <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg leading-relaxed">
-              Apakah Anda yakin ingin menghapus artikel <strong className="text-gray-900 font-bold">"{deletingArticle.title}"</strong>?
+              {locale === 'EN' ? (
+                <>Are you sure you want to delete <strong className="text-gray-900 font-bold">"{deletingArticle.title}"</strong>?</>
+              ) : (
+                <>Apakah Anda yakin ingin menghapus artikel <strong className="text-gray-900 font-bold">"{deletingArticle.title}"</strong>?</>
+              )}
             </div>
             <p className="text-gray-500 text-[11px]">
-              Tindakan ini tidak dapat dibatalkan. Artikel akan dihapus secara permanen dari basis data dan blog publik.
+              {locale === 'EN' ? 'This action is irreversible. The article will be permanently removed from database and public blog.' : 'Tindakan ini tidak dapat dibatalkan. Artikel akan dihapus secara permanen dari basis data dan blog publik.'}
             </p>
 
             <div className="pt-2 flex justify-end gap-2 border-t border-gray-100">
@@ -530,14 +527,14 @@ export default function ArticleListClient({ initialArticles, error }: ArticleLis
                 onClick={() => setIsDeleteOpen(false)}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold cursor-pointer"
               >
-                Batal
+                {t('cancel')}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold cursor-pointer transition-colors disabled:opacity-50"
               >
-                {isDeleting ? 'Menghapus...' : 'Ya, Hapus Artikel'}
+                {isDeleting ? (locale === 'EN' ? 'Deleting...' : 'Menghapus...') : (locale === 'EN' ? 'Yes, Delete Article' : 'Ya, Hapus Artikel')}
               </button>
             </div>
           </div>

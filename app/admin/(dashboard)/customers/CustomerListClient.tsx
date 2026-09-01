@@ -25,8 +25,9 @@ import { Modal } from '@/components/ui/Modal';
 import { getAdminCustomers, toggleCustomerBlockStatus } from '@/app/actions/admin-customers';
 import { formatNumber } from '@/lib/format';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { id, enUS } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 import type { Customer } from '@/types/admin';
 
 // Realistic preview data when database has 0 customer records
@@ -117,15 +118,9 @@ const DUMMY_CUSTOMERS: Customer[] = [
   },
 ];
 
-const STATUS_TABS = [
-  { id: 'ALL', label: 'Semua Pelanggan' },
-  { id: 'ACTIVE', label: 'Aktif' },
-  { id: 'BLOCKED', label: 'Diblokir' },
-  { id: 'SPENDERS', label: 'Pernah Belanja' },
-  { id: 'NEW_USERS', label: 'Belum Belanja' },
-] as const;
-
 export default function CustomerListClient() {
+  const { t, locale } = useAdminLanguage();
+  const dateLocale = locale === 'EN' ? enUS : id;
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingDummy, setIsUsingDummy] = useState(false);
@@ -142,6 +137,14 @@ export default function CustomerListClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const itemsPerPage = 10;
+
+  const statusTabs = useMemo(() => [
+    { id: 'ALL', label: t('tabAllCustomers') },
+    { id: 'ACTIVE', label: t('tabActiveCustomers') },
+    { id: 'BLOCKED', label: t('tabBlockedCustomers') },
+    { id: 'SPENDERS', label: locale === 'EN' ? 'Made Purchases' : 'Pernah Belanja' },
+    { id: 'NEW_USERS', label: locale === 'EN' ? 'No Orders Yet' : 'Belum Belanja' },
+  ], [t, locale]);
 
   const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
@@ -263,7 +266,7 @@ export default function CustomerListClient() {
             <Users size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Total Pelanggan</div>
+            <div className="text-xs text-gray-400 font-medium">{t('totalCustomers')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.total}</div>
           </div>
         </div>
@@ -273,7 +276,7 @@ export default function CustomerListClient() {
             <UserCheck size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Pelanggan Aktif</div>
+            <div className="text-xs text-gray-400 font-medium">{t('activeCustomers')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.active}</div>
           </div>
         </div>
@@ -283,7 +286,7 @@ export default function CustomerListClient() {
             <ShieldAlert size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Akun Diblokir</div>
+            <div className="text-xs text-gray-400 font-medium">{t('blockedCustomers')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.blocked}</div>
           </div>
         </div>
@@ -293,7 +296,7 @@ export default function CustomerListClient() {
             <Wallet size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Total Akumulasi Belanja</div>
+            <div className="text-xs text-gray-400 font-medium">{t('totalCustomerSpend')}</div>
             <div className="text-base font-bold text-gray-900 mt-0.5">
               Rp {formatNumber(metrics.totalGMV)}
             </div>
@@ -306,7 +309,7 @@ export default function CustomerListClient() {
         {/* Filter Tabs & Search Header */}
         <div className="p-3.5 border-b border-gray-100 flex flex-col gap-3">
           <div className="flex flex-wrap gap-1.5">
-            {STATUS_TABS.map((tab) => {
+            {statusTabs.map((tab) => {
               const active = selectedStatus === tab.id;
               return (
                 <button
@@ -331,7 +334,7 @@ export default function CustomerListClient() {
             <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Cari nama, email, no HP, kota..."
+                placeholder={t('searchCustomersPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -357,15 +360,15 @@ export default function CustomerListClient() {
                   onChange={(e) => setSortOption(e.target.value as any)}
                   className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary-green cursor-pointer font-medium"
                 >
-                  <option value="newest">Terbaru Bergabung</option>
-                  <option value="highest_spent">Total Belanja Terbanyak</option>
-                  <option value="most_orders">Pesanan Terbanyak</option>
-                  <option value="name_asc">Nama (A-Z)</option>
+                  <option value="newest">{t('sortCustomerNewest')}</option>
+                  <option value="highest_spent">{t('sortCustomerSpentDesc')}</option>
+                  <option value="most_orders">{t('sortCustomerOrdersDesc')}</option>
+                  <option value="name_asc">A - Z</option>
                 </select>
               </div>
 
               <span className="text-xs text-gray-400">
-                Total: <strong className="text-gray-700 font-semibold">{filteredCustomers.length}</strong> pelanggan
+                Total: <strong className="text-gray-700 font-semibold">{filteredCustomers.length}</strong> {t('customer').toLowerCase()}
               </span>
             </div>
           </div>
@@ -376,12 +379,12 @@ export default function CustomerListClient() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Pelanggan</th>
-                <th className="py-3 px-4">Bergabung</th>
-                <th className="py-3 px-4">Pesanan</th>
-                <th className="py-3 px-4">Total Belanja</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Opsi</th>
+                <th className="py-3 px-4">{t('customer')}</th>
+                <th className="py-3 px-4">{t('registeredDate')}</th>
+                <th className="py-3 px-4">{t('orders')}</th>
+                <th className="py-3 px-4">{t('totalAmount')}</th>
+                <th className="py-3 px-4">{t('status')}</th>
+                <th className="py-3 px-4 text-right">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700">
@@ -430,7 +433,7 @@ export default function CustomerListClient() {
                     {/* Joined Date */}
                     <td className="py-3 px-4 whitespace-nowrap">
                       <div className="text-xs text-gray-700 font-medium">
-                        {format(new Date(customer.createdAt), "dd MMM yyyy", { locale: id })}
+                        {format(new Date(customer.createdAt), "dd MMM yyyy", { locale: dateLocale })}
                       </div>
                       <div className="text-[10px] text-gray-400">
                         {customer.city ? `${customer.city}` : 'Indonesia'}
@@ -440,7 +443,7 @@ export default function CustomerListClient() {
                     {/* Total Orders */}
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className="font-bold text-xs text-gray-900">{customer.totalOrders}</span>{' '}
-                      <span className="text-[11px] text-gray-500">Order</span>
+                      <span className="text-[11px] text-gray-500">{t('orders')}</span>
                     </td>
 
                     {/* Total Spent */}
@@ -454,11 +457,11 @@ export default function CustomerListClient() {
                     <td className="py-3 px-4 whitespace-nowrap">
                       {customer.isBlocked ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                          <ShieldAlert size={11} /> Diblokir
+                          <ShieldAlert size={11} /> {t('tabBlockedCustomers')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <ShieldCheck size={11} /> Aktif
+                          <ShieldCheck size={11} /> {t('tabActiveCustomers')}
                         </span>
                       )}
                     </td>
@@ -469,10 +472,10 @@ export default function CustomerListClient() {
                         <button
                           onClick={() => setSelectedCustomer(customer)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
-                          title="Lihat Profil Lengkap"
+                          title={t('details')}
                         >
                           <Eye size={13} />
-                          <span>Detail</span>
+                          <span>{t('details')}</span>
                         </button>
                         
                         <button
@@ -483,7 +486,7 @@ export default function CustomerListClient() {
                               : 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200'
                           }`}
                         >
-                          {customer.isBlocked ? 'Buka Blokir' : 'Blokir'}
+                          {customer.isBlocked ? t('unblockCustomer') : t('blockCustomer')}
                         </button>
                       </div>
                     </td>
@@ -498,7 +501,7 @@ export default function CustomerListClient() {
         {filteredCustomers.length > itemsPerPage && (
           <div className="p-3.5 border-t border-gray-100 flex items-center justify-between">
             <p className="text-xs text-gray-400">
-              Menampilkan <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> dari <span className="font-semibold text-gray-700">{filteredCustomers.length}</span> pelanggan
+              {t('showing')} <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredCustomers.length)}</span> {t('of')} <span className="font-semibold text-gray-700">{filteredCustomers.length}</span> {t('customer').toLowerCase()}
             </p>
             <div className="flex items-center gap-1.5">
               <button
@@ -529,7 +532,7 @@ export default function CustomerListClient() {
       <Modal
         isOpen={Boolean(selectedCustomer)}
         onClose={() => setSelectedCustomer(null)}
-        title="Detail Profil Pelanggan"
+        title={t('customerDetailTitle')}
         maxWidth="lg"
       >
         {selectedCustomer && (
@@ -543,9 +546,9 @@ export default function CustomerListClient() {
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="font-bold text-gray-900 text-sm truncate">{selectedCustomer.name}</h4>
                   {selectedCustomer.isBlocked ? (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-700">Diblokir</span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-700">{t('tabBlockedCustomers')}</span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700">Aktif</span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700">{t('tabActiveCustomers')}</span>
                   )}
                 </div>
                 <div className="text-gray-500 flex items-center gap-1.5 mt-1">
@@ -564,17 +567,17 @@ export default function CustomerListClient() {
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <div className="flex items-center gap-1.5 text-gray-400 font-medium mb-1">
                   <ShoppingBag size={14} />
-                  <span>Total Transaksi Order</span>
+                  <span>{t('totalOrdersCount')}</span>
                 </div>
                 <div className="text-base font-bold text-gray-900">
-                  {selectedCustomer.totalOrders} <span className="text-xs font-normal text-gray-500">Pesanan</span>
+                  {selectedCustomer.totalOrders} <span className="text-xs font-normal text-gray-500">{t('orders')}</span>
                 </div>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <div className="flex items-center gap-1.5 text-gray-400 font-medium mb-1">
                   <Wallet size={14} />
-                  <span>Akumulasi Belanja</span>
+                  <span>{t('totalSpendAmount')}</span>
                 </div>
                 <div className="text-base font-bold text-emerald-600 font-mono">
                   Rp {formatNumber(selectedCustomer.totalSpent)}
@@ -587,9 +590,9 @@ export default function CustomerListClient() {
               <div className="flex items-start gap-2">
                 <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
                 <div>
-                  <span className="font-semibold text-gray-700 block">Alamat Pengiriman Utama:</span>
+                  <span className="font-semibold text-gray-700 block">{t('contactAndAddress')}:</span>
                   <p className="text-gray-600 mt-0.5 leading-relaxed">
-                    {selectedCustomer.address || 'Belum mengisi alamat domisili.'}
+                    {selectedCustomer.address || (locale === 'EN' ? 'No primary address recorded.' : 'Belum mengisi alamat domisili.')}
                   </p>
                   {(selectedCustomer.city || selectedCustomer.province) && (
                     <span className="text-gray-400 text-[11px] block mt-0.5">
@@ -602,7 +605,7 @@ export default function CustomerListClient() {
               <div className="flex items-center gap-2 pt-2 border-t border-gray-200/60">
                 <Calendar size={14} className="text-gray-400 shrink-0" />
                 <span className="text-gray-500">
-                  Terdaftar sejak: <strong className="text-gray-800">{format(new Date(selectedCustomer.createdAt), "dd MMMM yyyy", { locale: id })}</strong>
+                  {t('registeredDate')}: <strong className="text-gray-800">{format(new Date(selectedCustomer.createdAt), "dd MMMM yyyy", { locale: dateLocale })}</strong>
                 </span>
               </div>
             </div>
@@ -619,14 +622,14 @@ export default function CustomerListClient() {
                     : 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200'
                 }`}
               >
-                {selectedCustomer.isBlocked ? 'Buka Blokir Pengguna' : 'Blokir Akun Pengguna'}
+                {selectedCustomer.isBlocked ? t('unblockCustomer') : t('blockCustomer')}
               </button>
 
               <button
                 onClick={() => setSelectedCustomer(null)}
                 className="px-3.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
               >
-                Tutup
+                {t('close')}
               </button>
             </div>
           </div>
@@ -637,7 +640,7 @@ export default function CustomerListClient() {
       <Modal
         isOpen={Boolean(blockModalCustomer)}
         onClose={() => setBlockModalCustomer(null)}
-        title={blockModalCustomer?.isBlocked ? 'Buka Blokir Akun' : 'Konfirmasi Blokir Akun'}
+        title={blockModalCustomer?.isBlocked ? t('unblockCustomerConfirmTitle') : t('blockCustomerConfirmTitle')}
         maxWidth="md"
       >
         {blockModalCustomer && (
@@ -649,14 +652,14 @@ export default function CustomerListClient() {
             }`}>
               <p className="leading-relaxed">
                 {blockModalCustomer.isBlocked
-                  ? `Apakah Anda yakin ingin memulihkan (buka blokir) akun ${blockModalCustomer.name}? Pengguna ini akan dapat login dan bertransaksi kembali.`
-                  : `Apakah Anda yakin ingin memblokir akun ${blockModalCustomer.name}? Pengguna tidak akan dapat login atau melakukan checkout pesanan.`}
+                  ? `${t('unblockCustomerDesc')} (${blockModalCustomer.name})`
+                  : `${t('blockCustomerDesc')} (${blockModalCustomer.name})`}
               </p>
             </div>
 
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-1">
               <div className="flex justify-between">
-                <span className="text-gray-500">Nama:</span>
+                <span className="text-gray-500">{t('customer')}:</span>
                 <span className="font-semibold text-gray-900">{blockModalCustomer.name}</span>
               </div>
               <div className="flex justify-between">
@@ -670,7 +673,7 @@ export default function CustomerListClient() {
                 onClick={() => setBlockModalCustomer(null)}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold cursor-pointer"
               >
-                Batal
+                {t('cancel')}
               </button>
               <button
                 onClick={handleToggleBlock}
@@ -681,7 +684,7 @@ export default function CustomerListClient() {
                     : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                {isSubmitting ? 'Memproses...' : blockModalCustomer.isBlocked ? 'Ya, Buka Blokir' : 'Ya, Blokir Akun'}
+                {isSubmitting ? t('loading') : blockModalCustomer.isBlocked ? t('unblockCustomer') : t('blockCustomer')}
               </button>
             </div>
           </div>

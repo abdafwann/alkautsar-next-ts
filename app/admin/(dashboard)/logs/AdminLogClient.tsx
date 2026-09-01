@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { format, isToday } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { id, enUS } from 'date-fns/locale';
 import { 
   Search, 
   ChevronLeft, 
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useAdminLanguage } from '@/lib/i18n/AdminLanguageContext';
 
 interface AdminLogItem {
   id: string;
@@ -35,15 +36,6 @@ interface AdminLogItem {
   };
 }
 
-const CATEGORY_TABS = [
-  { id: 'ALL', label: 'Semua' },
-  { id: 'AUTH', label: 'Login & Sesi' },
-  { id: 'CATALOG', label: 'Katalog & Produk' },
-  { id: 'ORDER', label: 'Pesanan' },
-  { id: 'PROMO', label: 'Voucher & Promo' },
-  { id: 'SYSTEM', label: 'Pengaturan & Sistem' },
-] as const;
-
 export default function AdminLogClient({ 
   initialData, 
   error 
@@ -51,11 +43,22 @@ export default function AdminLogClient({
   initialData?: AdminLogItem[]; 
   error?: string; 
 }) {
+  const { t, locale } = useAdminLanguage();
+  const dateLocale = locale === 'EN' ? enUS : id;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<AdminLogItem | null>(null);
+
+  const categoryTabs = useMemo(() => [
+    { id: 'ALL', label: t('tabAllLogs') },
+    { id: 'AUTH', label: t('tabAuthLogs') },
+    { id: 'CATALOG', label: t('tabCatalogLogs') },
+    { id: 'ORDER', label: t('tabOrderLogs') },
+    { id: 'PROMO', label: t('tabPromoLogs') },
+    { id: 'SYSTEM', label: t('tabSystemLogs') },
+  ], [t]);
   
   const itemsPerPage = 12;
 
@@ -160,7 +163,7 @@ export default function AdminLogClient({
             <Activity size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Total Log</div>
+            <div className="text-xs text-gray-400 font-medium">{t('totalLogs')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.total}</div>
           </div>
         </div>
@@ -170,7 +173,7 @@ export default function AdminLogClient({
             <Users size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Admin Terlibat</div>
+            <div className="text-xs text-gray-400 font-medium">{t('activeAdmins')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.uniqueAdmins}</div>
           </div>
         </div>
@@ -180,7 +183,7 @@ export default function AdminLogClient({
             <Clock size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Hari Ini</div>
+            <div className="text-xs text-gray-400 font-medium">{t('todayLogs')}</div>
             <div className="text-xl font-bold text-gray-900 mt-0.5">{metrics.todayCount}</div>
           </div>
         </div>
@@ -190,7 +193,7 @@ export default function AdminLogClient({
             <Layers size={18} />
           </div>
           <div>
-            <div className="text-xs text-gray-400 font-medium">Modul Terbanyak</div>
+            <div className="text-xs text-gray-400 font-medium">{t('topEntity')}</div>
             <div className="text-base font-bold text-gray-900 mt-0.5 uppercase truncate max-w-[120px]">
               {metrics.topEntity}
             </div>
@@ -203,7 +206,7 @@ export default function AdminLogClient({
         {/* Filter Tabs & Search Header */}
         <div className="p-3.5 border-b border-gray-100 flex flex-col gap-3">
           <div className="flex flex-wrap gap-1.5">
-            {CATEGORY_TABS.map((tab) => {
+            {categoryTabs.map((tab) => {
               const active = selectedCategory === tab.id;
               return (
                 <button
@@ -228,7 +231,7 @@ export default function AdminLogClient({
             <div className="relative w-full sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Cari aksi, detail, nama admin, IP..."
+                placeholder={t('searchLogsPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -252,11 +255,11 @@ export default function AdminLogClient({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <ArrowUpDown size={14} className="text-gray-400" />
-                <span>{sortOrder === 'desc' ? 'Terbaru' : 'Terlama'}</span>
+                <span>{sortOrder === 'desc' ? t('sortNewest') : t('sortOldest')}</span>
               </button>
 
               <span className="text-xs text-gray-400">
-                Total: <strong className="text-gray-700 font-semibold">{filteredLogs.length}</strong> log
+                Total: <strong className="text-gray-700 font-semibold">{filteredLogs.length}</strong> {t('logs').toLowerCase()}
               </span>
             </div>
           </div>
@@ -267,18 +270,18 @@ export default function AdminLogClient({
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Waktu</th>
-                <th className="py-3 px-4">Admin</th>
-                <th className="py-3 px-4">Aksi</th>
-                <th className="py-3 px-4">Entitas & Rincian</th>
-                <th className="py-3 px-4 text-right">Opsi</th>
+                <th className="py-3 px-4">{t('timestamp')}</th>
+                <th className="py-3 px-4">{t('adminActor')}</th>
+                <th className="py-3 px-4">{t('actionLabel')}</th>
+                <th className="py-3 px-4">{t('actionAndEntity')}</th>
+                <th className="py-3 px-4 text-right">{t('action')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700">
               {paginatedLogs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-400 text-xs">
-                    {searchTerm ? 'Tidak ada log yang sesuai dengan pencarian.' : 'Belum ada log aktivitas.'}
+                    {searchTerm ? t('noLogsFound') : (locale === 'EN' ? 'No activity logs recorded.' : 'Belum ada log aktivitas.')}
                   </td>
                 </tr>
               ) : (
@@ -290,7 +293,7 @@ export default function AdminLogClient({
                     <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="py-3 px-4 whitespace-nowrap" suppressHydrationWarning>
                         <div className="font-medium text-xs text-gray-900" suppressHydrationWarning>
-                          {format(new Date(log.createdAt), "dd MMM yyyy", { locale: id })}
+                          {format(new Date(log.createdAt), "dd MMM yyyy", { locale: dateLocale })}
                         </div>
                         <div className="text-[11px] text-gray-400 font-mono" suppressHydrationWarning>
                           {format(new Date(log.createdAt), "HH:mm:ss 'WIB'")}
@@ -346,7 +349,7 @@ export default function AdminLogClient({
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
                         >
                           <Eye size={13} />
-                          <span>Rincian</span>
+                          <span>{t('details')}</span>
                         </button>
                       </td>
                     </tr>
@@ -361,7 +364,7 @@ export default function AdminLogClient({
         {filteredLogs.length > itemsPerPage && (
           <div className="p-3.5 border-t border-gray-100 flex items-center justify-between" suppressHydrationWarning>
             <p className="text-xs text-gray-400">
-              Menampilkan <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredLogs.length)}</span> dari <span className="font-semibold text-gray-700">{filteredLogs.length}</span> log
+              {t('showing')} <span className="font-semibold text-gray-700">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredLogs.length)}</span> {t('of')} <span className="font-semibold text-gray-700">{filteredLogs.length}</span> {t('logs').toLowerCase()}
             </p>
             <div className="flex items-center gap-1.5">
               <button
@@ -396,28 +399,28 @@ export default function AdminLogClient({
       <Modal
         isOpen={Boolean(selectedLog)}
         onClose={() => setSelectedLog(null)}
-        title="Detail Aktivitas Admin"
+        title={t('logDetailTitle')}
         maxWidth="lg"
       >
         {selectedLog && (
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
               <div>
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Pelaksana</span>
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">{t('adminLabel')}</span>
                 <span className="font-bold text-gray-900 text-sm block mt-0.5">{selectedLog.admin?.name}</span>
                 <span className="text-gray-500">{selectedLog.admin?.email}</span>
               </div>
               <div>
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">Waktu</span>
+                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider block">{t('timestamp')}</span>
                 <span className="font-bold text-gray-900 text-sm block mt-0.5">
-                  {format(new Date(selectedLog.createdAt), "dd MMMM yyyy, HH:mm:ss", { locale: id })} WIB
+                  {format(new Date(selectedLog.createdAt), "dd MMMM yyyy, HH:mm:ss", { locale: dateLocale })} WIB
                 </span>
                 <span className="text-emerald-600 font-medium">Server Recorded</span>
               </div>
             </div>
 
             <div>
-              <span className="text-gray-500 font-semibold block mb-1">Aksi & Modul</span>
+              <span className="text-gray-500 font-semibold block mb-1">{t('actionAndEntity')}</span>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-1 rounded-md bg-gray-900 text-white font-semibold">
                   {selectedLog.action}
@@ -436,9 +439,9 @@ export default function AdminLogClient({
             </div>
 
             <div>
-              <span className="text-gray-500 font-semibold block mb-1">Rincian / Payload</span>
+              <span className="text-gray-500 font-semibold block mb-1">{t('payloadDetails')}</span>
               <div className="p-3 bg-gray-900 text-gray-100 font-mono rounded-lg leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto">
-                {selectedLog.details || 'Tidak ada detail teks.'}
+                {selectedLog.details || (locale === 'EN' ? 'No detail payload recorded.' : 'Tidak ada detail teks.')}
               </div>
             </div>
 
@@ -452,6 +455,15 @@ export default function AdminLogClient({
                 )}
               </div>
             )}
+
+            <div className="pt-2 flex justify-end border-t border-gray-100">
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="px-3.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
+              >
+                {t('close')}
+              </button>
+            </div>
           </div>
         )}
       </Modal>

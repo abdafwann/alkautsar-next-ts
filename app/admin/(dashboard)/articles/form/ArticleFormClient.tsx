@@ -107,15 +107,15 @@ export default function ArticleFormClient({ initialData }: ArticleFormClientProp
 
       const res = await uploadImage(formDataUpload);
 
-      if (res.success && res.data) {
+      if ('success' in res && res.success && 'data' in res && res.data) {
         setFormData(prev => ({
           ...prev,
-          imageUrl: res.data.url,
-          imagePublicId: res.data.publicId
+          imageUrl: res.data!.url,
+          imagePublicId: res.data!.publicId
         }));
         toast.success('Gambar sampul berhasil diunggah', { id: toastId });
       } else {
-        toast.error(res.error || 'Gagal mengunggah gambar', { id: toastId });
+        toast.error((res as any)?.error || 'Gagal mengunggah gambar', { id: toastId });
       }
     } catch {
       toast.error('Terjadi kesalahan saat mengunggah gambar', { id: toastId });

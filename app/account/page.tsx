@@ -2,6 +2,8 @@ import { getProfile } from '@/app/actions/account';
 import { ProfileFormClient } from './ProfileFormClient';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AccountPage() {
   const profile = await getProfile();
   
