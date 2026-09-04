@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, Trash2, ArrowRight } from 'lucide-react';
+import { Heart, Trash, ArrowRight } from '@phosphor-icons/react';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { toggleDbWishlist } from '@/app/actions/wishlist';
 
@@ -60,7 +60,7 @@ export function WishlistDropdown({
         title="Wishlist Favorit"
         aria-label="Wishlist Favorit"
       >
-        <Heart size={19} className={wishlistItems.length > 0 ? 'text-red-500 fill-red-500' : ''} />
+        <Heart size={19} weight={wishlistItems.length > 0 ? 'fill' : 'duotone'} className={wishlistItems.length > 0 ? 'text-red-500' : ''} />
         {!isSyncing && wishlistItems.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-xs">
             {wishlistItems.length > 99 ? '99+' : wishlistItems.length}
@@ -85,7 +85,7 @@ export function WishlistDropdown({
               onClick={onClose}
               className="text-[11px] font-bold text-[var(--color-primary-green)] hover:underline flex items-center gap-0.5"
             >
-              Lihat Semua <ArrowRight size={12} />
+              Lihat Semua <ArrowRight size={12} weight="bold" />
             </Link>
           </div>
 
@@ -93,7 +93,7 @@ export function WishlistDropdown({
           <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
             {wishlistItems.length === 0 ? (
               <div className="py-8 text-center px-4">
-                <Heart size={32} className="text-gray-300 mx-auto mb-2" />
+                <Heart size={32} weight="duotone" className="text-gray-300 mx-auto mb-2" />
                 <p className="text-xs text-gray-500 font-medium">Belum ada produk favorit</p>
                 <Link
                   href="/shop"
@@ -112,7 +112,8 @@ export function WishlistDropdown({
                       alt={item.title}
                       width={40}
                       height={40}
-                      className="object-contain p-0.5"
+                      style={{ width: 'auto', height: 'auto' }}
+                      className="max-h-full max-w-full object-contain p-0.5"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -130,7 +131,7 @@ export function WishlistDropdown({
                     className="text-gray-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
                     title="Hapus"
                   >
-                    <Trash2 size={13} />
+                    <Trash size={14} weight="duotone" />
                   </button>
                 </div>
               ))

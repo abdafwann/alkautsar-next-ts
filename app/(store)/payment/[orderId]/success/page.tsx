@@ -4,16 +4,17 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Package,
   ArrowRight,
-  Loader2,
+  CircleNotch,
   Truck,
   ArrowLeft,
   ShieldCheck,
   UserCheck,
   MapPin
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { syncPaymentStatus } from '@/app/actions/order';
+import { useCartStore } from '@/store/useCartStore';
+import { clearDbCart } from '@/app/actions/cart';
 
 interface OrderItem {
   id: string;
@@ -65,6 +66,13 @@ export default function PaymentSuccessPage() {
           if (data.success && data.order) {
             setOrderInfo(data.order);
           }
+
+          /*
+           * Membersihkan cart lokal Zustand dan database saat halaman sukses diakses 
+           * untuk memastikan badge cart di navbar kembali ke 0 setelah transaksi tuntas
+           */
+          useCartStore.getState().clearCart();
+          clearDbCart().catch(() => {});
         }
       } catch (error) {
         console.error('Verification error:', error);
@@ -82,7 +90,7 @@ export default function PaymentSuccessPage() {
     return (
       <div className="min-h-screen bg-[#fcfbf9] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-7 h-7 animate-spin text-primary-green mx-auto mb-3" />
+          <CircleNotch className="w-7 h-7 animate-spin text-primary-green mx-auto mb-3" />
           <p className="text-xs font-medium text-gray-500">Memverifikasi status pembayaran...</p>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import midtransClient from 'midtrans-client';
 import type { OrderStatus, PaymentStatus } from '@prisma/client';
+import { processOrderPaymentTransition } from '@/lib/order-transition';
 
 const VALID_ORDER_STATUSES: OrderStatus[] = [
   'WAITING_FOR_PAYMENT',
@@ -116,52 +117,13 @@ export async function POST(req: Request) {
     }
 
     // ATOMIC TRANSACTION: State update with Inventory & Sold Counter Management
-    await prisma.$transaction(async (tx) => {
-      const wasPaid = order.paymentStatus === 'PAID';
-      const isBecomingPaid = targetPaymentStatus === 'PAID';
-      const isBecomingCancelled = targetOrderStatus === 'CANCELLED';
-
-      // 1. Update order
-      await tx.order.update({
-        where: { orderId },
-        data: {
-          paymentStatus: targetPaymentStatus,
-          orderStatus: targetOrderStatus,
-          paymentType: statusResponse.payment_type,
-          paymentSettlement: statusResponse.settlement_time || statusResponse.payment_time || undefined,
-          ...(isBecomingCancelled ? { cancelledAt: new Date(), cancellationReason: `Pembayaran ${transactionStatus}` } : {})
-        }
-      });
-
-      // 2. Handle Payment Settlement: Increment product.sold
-      if (isBecomingPaid && !wasPaid) {
-        for (const item of order.orderItems) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { sold: { increment: item.count } }
-          });
-        }
-      }
-
-      // 3. Handle Order Cancellation/Expiry: Restore stock & rollback voucher, decrement sold if was paid
-      if (isBecomingCancelled && order.orderStatus !== 'CANCELLED') {
-        for (const item of order.orderItems) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              quantity: { increment: item.count },
-              ...(wasPaid ? { sold: { decrement: item.count } } : {})
-            }
-          });
-        }
-
-        if (order.voucherCode) {
-          await tx.voucher.update({
-            where: { code: order.voucherCode },
-            data: { usedCount: { decrement: 1 } }
-          });
-        }
-      }
+    await processOrderPaymentTransition({
+      orderId,
+      targetPaymentStatus: targetPaymentStatus as any,
+      targetOrderStatus: targetOrderStatus as any,
+      paymentType: statusResponse.payment_type,
+      paymentSettlement: statusResponse.settlement_time || statusResponse.payment_time || undefined,
+      cancellationReason: `Pembayaran ${transactionStatus}`,
     });
 
     console.log(`Webhook - Successfully processed: ${orderId} -> Payment: ${targetPaymentStatus}, Order: ${targetOrderStatus}`);

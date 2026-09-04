@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth-guard';
+import { sanitizeString, isValidEmail } from '@/lib/validation';
 
 // Mengambil StoreSettings (Singleton id: 'default')
 export async function getStoreSettings() {
@@ -39,14 +40,28 @@ export async function updateStoreSettings(data: {
   try {
     await requireAdmin();
 
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Data pengaturan tidak valid' };
+    }
+
+    const cleanStoreName = sanitizeString(data.storeName).slice(0, 100);
+    if (!cleanStoreName) {
+      return { success: false, error: 'Nama toko wajib diisi' };
+    }
+
+    const cleanEmail = data.email ? data.email.toLowerCase().trim() : null;
+    if (cleanEmail && !isValidEmail(cleanEmail)) {
+      return { success: false, error: 'Format email toko tidak valid' };
+    }
+
     const payload = {
-      storeName: data.storeName,
-      description: data.description || null,
-      email: data.email || null,
-      whatsapp: data.whatsapp || null,
-      address: data.address || null,
-      logoUrl: data.logoUrl || null,
-      logoPublicId: data.logoPublicId || null,
+      storeName: cleanStoreName,
+      description: data.description ? sanitizeString(data.description).slice(0, 500) : null,
+      email: cleanEmail,
+      whatsapp: data.whatsapp ? sanitizeString(data.whatsapp).slice(0, 30) : null,
+      address: data.address ? sanitizeString(data.address).slice(0, 500) : null,
+      logoUrl: data.logoUrl ? sanitizeString(data.logoUrl) : null,
+      logoPublicId: data.logoPublicId ? sanitizeString(data.logoPublicId) : null,
     };
 
     const settings = await (prisma as any).storeSettings.upsert({

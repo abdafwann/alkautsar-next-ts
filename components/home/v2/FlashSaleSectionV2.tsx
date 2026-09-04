@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
+import Image from 'next/image';
+import { CaretLeft, CaretRight, Plus, Clock, Plant } from '@phosphor-icons/react';
 import { useCartStore } from '@/store/useCartStore';
 import toast from 'react-hot-toast';
 
@@ -125,7 +126,21 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
     }
   };
 
+  const cartItems = useCartStore((s) => s.items);
+
   const handleAddToCart = (product: any) => {
+    const isOutOfStock = product.quantity !== undefined && product.quantity <= 0;
+    if (isOutOfStock) {
+      toast.error('Maaf, stok produk promo ini sedang habis.');
+      return;
+    }
+
+    const currentInCart = cartItems.find((i) => i.id === product.id)?.quantity || 0;
+    if (product.quantity !== undefined && currentInCart >= product.quantity) {
+      toast.error(`Stok maksimal (${product.quantity} item) sudah ada di keranjang Anda.`);
+      return;
+    }
+
     const title = product.title || product.name || 'Produk Herbal';
     const imgUrl = product.images?.[0]?.url || '';
     const finalPrice = product.promoPrice && product.promoPrice > 0 ? Number(product.promoPrice) : Number(product.price);
@@ -142,8 +157,8 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
   };
 
   return (
-    <section className="py-16 md:py-24 bg-[#f4f8f4] border-b border-[#dfebdf]">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+    <section className="py-12 md:py-16 bg-[#f4f8f4] border-b border-[#dfebdf]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Flash Sale Header & Live Countdown Timer */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-6 border-b border-[#e2ddd0]">
@@ -151,15 +166,15 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
             <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#8B5A2B] block mb-1.5">
               Penawaran Terbatas
             </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#1a1a1a] tracking-tight">
-              Promo Spesial Hari Ini
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-[#1a1a1a] tracking-tight">
+              Promo Spesial <span className="italic font-normal text-[#8B5A2B]">Hari Ini</span>
             </h2>
           </div>
 
           {/* Minimalist Countdown Clock and Navigation Controls */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-[#e2ddd0] shadow-2xs">
-              <Clock size={15} className="text-[#8B5A2B]" />
+              <Clock size={15} weight="duotone" className="text-[#8B5A2B]" />
               <span className="text-xs text-gray-600 font-medium mr-1">Berakhir dalam:</span>
               <PromoCountdownTimer targetExpiryString={targetExpiryString} />
             </div>
@@ -171,14 +186,14 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
                 className="w-9 h-9 rounded-full bg-white hover:bg-[#faf7f2] border border-[#e2ddd0] text-gray-800 flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Geser ke Kiri"
               >
-                <ChevronLeft size={16} />
+                <CaretLeft size={16} weight="bold" />
               </button>
               <button
                 onClick={scrollRight}
                 className="w-9 h-9 rounded-full bg-white hover:bg-[#faf7f2] border border-[#e2ddd0] text-gray-800 flex items-center justify-center transition-colors cursor-pointer"
                 aria-label="Geser ke Kanan"
               >
-                <ChevronRight size={16} />
+                <CaretRight size={16} weight="bold" />
               </button>
             </div>
           </div>
@@ -197,6 +212,8 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
             const discount = product.promoPercentage 
               ? product.promoPercentage 
               : Math.round(((originalPrice - promoPrice) / originalPrice) * 100);
+            const isOutOfStock = product.quantity !== undefined && product.quantity <= 0;
+            const isLowStock = product.quantity !== undefined && product.quantity > 0 && product.quantity <= 5;
 
             return (
               <div
@@ -210,24 +227,40 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
                     className="block relative w-full h-44 bg-[#faf9f6] rounded-xl overflow-hidden mb-3 flex items-center justify-center p-3 border border-[#f0ece3]"
                   >
                     {imgUrl ? (
-                      <img
+                      <Image
                         src={imgUrl}
                         alt={title}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        className={`object-contain p-2.5 group-hover:scale-105 transition-transform duration-500 ${
+                          isOutOfStock ? 'opacity-55 grayscale-[25%]' : ''
+                        }`}
                       />
                     ) : (
                       <div className="text-center p-3">
-                        <span className="text-2xl">🌿</span>
+                        <Plant size={24} weight="duotone" className="text-gray-300 mx-auto" />
                         <p className="text-xs font-bold text-gray-900 mt-1">{title}</p>
                       </div>
                     )}
 
-                    {/* Discount Tag */}
-                    {discount > 0 && (
-                      <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
-                        Hemat {discount}%
-                      </span>
-                    )}
+                    {/* Stock & Discount Badges */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                      {isOutOfStock && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                          Stok Habis
+                        </span>
+                      )}
+                      {!isOutOfStock && isLowStock && (
+                        <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                          Sisa {product.quantity}
+                        </span>
+                      )}
+                      {!isOutOfStock && discount > 0 && (
+                        <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                          Hemat {discount}%
+                        </span>
+                      )}
+                    </div>
                   </Link>
 
                   {/* Category & Title */}
@@ -241,13 +274,20 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
                         {title}
                       </h3>
                     </Link>
+
+                    {/* Low Stock / Out of Stock Subtext */}
+                    {isOutOfStock ? (
+                      <span className="text-[10px] font-bold text-red-600 block">Stok Habis</span>
+                    ) : isLowStock ? (
+                      <span className="text-[10px] font-bold text-amber-600 block">⚠️ Sisa {product.quantity} item!</span>
+                    ) : null}
                   </div>
                 </div>
 
                 {/* Pricing & Add to Cart */}
                 <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-extrabold text-[#00AA5B]">
+                    <div className={`text-sm font-extrabold ${isOutOfStock ? 'text-gray-400' : 'text-[#00AA5B]'}`}>
                       {formatRupiah(promoPrice)}
                     </div>
                     {promoPrice < originalPrice && (
@@ -257,14 +297,26 @@ export default function FlashSaleSectionV2({ products }: FlashSaleSectionV2Props
                     )}
                   </div>
 
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="w-9 h-9 rounded-xl bg-[#e8f5e9] hover:bg-[#00AA5B] text-[#00AA5B] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-2xs active:scale-95"
-                    aria-label={`Beli ${title}`}
-                    title="Tambah ke Keranjang"
-                  >
-                    <Plus size={16} strokeWidth={2.5} />
-                  </button>
+                  {isOutOfStock ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="px-2.5 py-1.5 rounded-xl bg-gray-100 text-gray-400 text-xs font-semibold cursor-not-allowed shadow-2xs"
+                      title="Stok Habis"
+                    >
+                      Habis
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(product)}
+                      className="w-9 h-9 rounded-xl bg-[#e8f5e9] hover:bg-[#00AA5B] text-[#00AA5B] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer shadow-2xs active:scale-95"
+                      aria-label={`Beli ${title}`}
+                      title={isLowStock ? `Tambah ke Keranjang (Sisa ${product.quantity})` : 'Tambah ke Keranjang'}
+                    >
+                      <Plus size={16} strokeWidth={2.5} />
+                    </button>
+                  )}
                 </div>
 
               </div>

@@ -3,11 +3,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
-    'books-streams-designation-shots.trycloudflare.com',
+    'bennett-reaching-penguin-publicity.trycloudflare.com',
     '*.trycloudflare.com',
     'localhost:3000',
   ],
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -34,7 +37,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        'books-streams-designation-shots.trycloudflare.com',
+        'bennett-reaching-penguin-publicity.trycloudflare.com',
         '*.trycloudflare.com',
         'localhost:3000',
       ],

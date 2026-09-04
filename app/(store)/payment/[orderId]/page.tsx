@@ -6,17 +6,17 @@ import Link from 'next/link';
 import Script from 'next/script';
 import toast from 'react-hot-toast';
 import {
-  CheckCircle2,
+  CheckCircle,
   Clock,
   Package,
-  ChevronRight,
+  CaretRight,
   ArrowLeft,
-  Loader2,
-  AlertCircle,
+  CircleNotch,
+  WarningCircle,
   ShieldCheck,
   CreditCard,
   MapPin
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface OrderData {
   orderId: string;
@@ -174,7 +174,7 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen bg-[#fcfbf9] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-7 h-7 animate-spin text-primary-green mx-auto mb-3" />
+          <CircleNotch className="w-7 h-7 animate-spin text-primary-green mx-auto mb-3" />
           <p className="text-xs font-medium text-gray-500">Memuat detail pesanan Anda...</p>
         </div>
       </div>
@@ -198,6 +198,7 @@ export default function PaymentPage() {
   }
 
   const isAlreadyPaid = orderData.paymentStatus === 'PAID';
+  const isCancelled = orderData.orderStatus === 'CANCELLED';
 
   return (
     <div className="bg-[#fcfbf9] min-h-screen pb-16">
@@ -213,7 +214,7 @@ export default function PaymentPage() {
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <h1 className="text-sm font-bold text-gray-900">
-              {isAlreadyPaid ? 'Status Pesanan' : 'Detail Pembayaran'}
+              {isAlreadyPaid ? 'Status Pesanan' : isCancelled ? 'Pesanan Dibatalkan' : 'Detail Pembayaran'}
             </h1>
           </div>
           <span className="text-[11px] font-mono font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
@@ -227,7 +228,7 @@ export default function PaymentPage() {
         {/* Status / Alert Banner */}
         {isAlreadyPaid ? (
           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-primary-green shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-primary-green shrink-0 mt-0.5" weight="fill" />
             <div>
               <h2 className="text-sm font-bold text-gray-900">Pembayaran Berhasil Diterima</h2>
               <p className="text-xs text-gray-600 mt-0.5">
@@ -235,16 +236,32 @@ export default function PaymentPage() {
               </p>
             </div>
           </div>
+        ) : isCancelled ? (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3">
+            <WarningCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" weight="fill" />
+            <div>
+              <h2 className="text-sm font-bold text-rose-900">Pesanan Telah Dibatalkan</h2>
+              <p className="text-xs text-red-700 mt-0.5">
+                Transaksi ini telah dibatalkan atau kadaluarsa. Stok produk telah dikembalikan.
+              </p>
+              <Link
+                href="/store"
+                className="mt-3 inline-block bg-primary-green text-white font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-primary-green-hover transition"
+              >
+                Belanja Kembali
+              </Link>
+            </div>
+          </div>
         ) : isExpired ? (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <WarningCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" weight="fill" />
             <div>
               <h2 className="text-sm font-bold text-red-900">Batas Waktu Pembayaran Telah Habis</h2>
               <p className="text-xs text-red-700 mt-0.5">
                 Pesanan ini otomatis dibatalkan. Silakan buat pesanan baru dari katalog.
               </p>
               <Link
-                href="/shop"
+                href="/store"
                 className="mt-3 inline-block bg-red-600 text-white font-semibold px-4 py-1.5 rounded-lg text-xs hover:bg-red-700 transition"
               >
                 Belanja Kembali
@@ -254,7 +271,7 @@ export default function PaymentPage() {
         ) : null}
 
         {/* Live Countdown Card */}
-        {!isAlreadyPaid && !isExpired && (
+        {!isAlreadyPaid && !isExpired && !isCancelled && (
           <div
             className={`rounded-xl p-4 text-center transition-colors border shadow-2xs ${
               isUrgent
@@ -339,14 +356,14 @@ export default function PaymentPage() {
             >
               {isPaymentLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch className="w-4 h-4 animate-spin" />
                   <span>Membuka Midtrans...</span>
                 </>
               ) : (
                 <>
                   <CreditCard size={15} />
                   <span>Bayar Sekarang</span>
-                  <ChevronRight size={15} />
+                  <CaretRight size={15} />
                 </>
               )}
             </button>

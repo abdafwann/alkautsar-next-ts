@@ -3,20 +3,32 @@
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createSession, deleteSession, getSession } from '@/lib/session';
+import { sanitizeString, isValidEmail } from '@/lib/validation';
 
 export async function registerUser(formData: FormData) {
   try {
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
+    const rawName = formData.get('name') as string;
+    const rawEmail = formData.get('email') as string;
     const password = formData.get('password') as string;
+
+    const name = sanitizeString(rawName).slice(0, 100);
+    const email = typeof rawEmail === 'string' ? rawEmail.toLowerCase().trim() : '';
 
     if (!name || !email || !password) {
       return { success: false, error: 'Semua kolom wajib diisi' };
     }
 
+    if (!isValidEmail(email)) {
+      return { success: false, error: 'Format alamat email tidak valid' };
+    }
+
+    if (password.length < 6) {
+      return { success: false, error: 'Kata sandi minimal 6 karakter' };
+    }
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email },
     });
 
     if (existingUser) {
@@ -30,7 +42,7 @@ export async function registerUser(formData: FormData) {
     const user = await prisma.user.create({
       data: {
         name,
-        email: email.toLowerCase(),
+        email,
         password: hashedPassword,
       },
       select: {
@@ -50,8 +62,9 @@ export async function registerUser(formData: FormData) {
 
 export async function loginUser(formData: FormData) {
   try {
-    const email = formData.get('email') as string;
+    const rawEmail = formData.get('email') as string;
     const password = formData.get('password') as string;
+    const email = typeof rawEmail === 'string' ? rawEmail.toLowerCase().trim() : '';
 
     if (!email || !password) {
       return { success: false, error: 'Email dan password wajib diisi' };
@@ -59,7 +72,7 @@ export async function loginUser(formData: FormData) {
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email },
     });
 
     if (!user) {

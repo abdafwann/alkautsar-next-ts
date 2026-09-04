@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, Package, LogOut, LogIn, UserPlus, FileSearch, ChevronDown } from 'lucide-react';
+import { User, Package, SignOut, SignIn, UserPlus, MagnifyingGlass, CaretDown } from '@phosphor-icons/react';
 import { User as UserType } from './types';
 
 interface ProfileDropdownProps {
@@ -49,8 +49,9 @@ export function ProfileDropdown({
             {user.name.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-bold truncate max-w-[90px]">{user.name.split(' ')[0]}</span>
-          <ChevronDown 
+          <CaretDown 
             size={13} 
+            weight="bold"
             className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[var(--color-primary-green)]' : ''}`} 
           />
         </button>
@@ -66,7 +67,7 @@ export function ProfileDropdown({
           title="Masuk ke Akun"
           aria-label="Masuk ke Akun"
         >
-          <LogIn size={14} />
+          <SignIn size={15} weight="duotone" />
           <span>Masuk</span>
         </button>
       )}
@@ -89,19 +90,19 @@ export function ProfileDropdown({
               {/* Navigation Links */}
               <div className="py-1.5">
                 <Link
-                  href="/profile"
+                  href="/account"
                   onClick={onClose}
                   className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-[var(--color-primary-green)] transition-colors"
                 >
-                  <User size={15} />
+                  <User size={15} weight="duotone" />
                   <span>Profil Saya</span>
                 </Link>
                 <Link
-                  href="/orders"
+                  href="/account/orders"
                   onClick={onClose}
                   className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-[var(--color-primary-green)] transition-colors"
                 >
-                  <Package size={15} />
+                  <Package size={15} weight="duotone" />
                   <span>Pesanan Saya</span>
                 </Link>
               </div>
@@ -112,7 +113,7 @@ export function ProfileDropdown({
                   onClick={onLogout}
                   className="flex items-center gap-2.5 w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left transition-colors cursor-pointer"
                 >
-                  <LogOut size={15} />
+                  <SignOut size={15} weight="duotone" />
                   <span>Keluar</span>
                 </button>
               </div>
@@ -123,7 +124,7 @@ export function ProfileDropdown({
               <div className="px-4 py-3 border-b border-gray-100 bg-[#f8fafc]">
                 <p className="text-xs font-bold text-gray-900">Selamat Datang!</p>
                 <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                  Masuk atau buat akun untuk kemudahan belanja & tracking obat herbal.
+                  Masuk atau buat akun untuk kemudahan belanja &amp; tracking obat herbal.
                 </p>
               </div>
 
@@ -134,7 +135,7 @@ export function ProfileDropdown({
                   onClick={onClose}
                   className="flex items-center justify-center gap-1.5 w-full bg-[var(--color-primary-green)] hover:bg-[var(--color-primary-green-hover)] text-white text-xs font-bold py-2 rounded-xl transition-colors shadow-xs cursor-pointer"
                 >
-                  <LogIn size={14} />
+                  <SignIn size={15} weight="duotone" />
                   <span>Masuk Sekarang</span>
                 </Link>
 
@@ -143,7 +144,7 @@ export function ProfileDropdown({
                   onClick={onClose}
                   className="flex items-center justify-center gap-1.5 w-full bg-emerald-50 hover:bg-emerald-100 text-[var(--color-primary-green)] text-xs font-bold py-2 rounded-xl transition-colors cursor-pointer"
                 >
-                  <UserPlus size={14} />
+                  <UserPlus size={15} weight="duotone" />
                   <span>Daftar Akun Baru</span>
                 </Link>
 
@@ -154,7 +155,7 @@ export function ProfileDropdown({
                   onClick={onClose}
                   className="flex items-center justify-center gap-1.5 w-full bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-medium py-1.5 rounded-xl transition-colors cursor-pointer"
                 >
-                  <FileSearch size={14} />
+                  <MagnifyingGlass size={15} weight="duotone" />
                   <span>Lacak Pesanan Cepat</span>
                 </Link>
               </div>

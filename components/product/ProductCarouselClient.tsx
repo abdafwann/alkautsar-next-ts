@@ -75,6 +75,7 @@ export default function ProductCarousel({ products, title = "Best Sellers" }: Pr
                   imageUrl={product.images && product.images.length > 0 ? product.images[0].url : 'https://placehold.co/400x400?text=No+Image'}
                   slug={product.slug}
                   productForm={product.productForm}
+                  quantity={product.quantity}
                 />
               </div>
             ))

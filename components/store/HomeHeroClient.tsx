@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, MessageCircle, CheckCircle2, ShieldCheck, Leaf } from 'lucide-react';
+import { ArrowRight, WhatsappLogo, CheckCircle, ShieldCheck, Plant } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 interface HomeHeroClientProps {
@@ -24,21 +24,15 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
       <div className="absolute top-0 right-10 w-[500px] h-[500px] bg-[#00AA5B]/4 rounded-full blur-3xl pointer-events-none -z-0" />
       <div className="absolute -bottom-20 left-1/3 w-[400px] h-[400px] bg-[#8B5A2B]/4 rounded-full blur-3xl pointer-events-none -z-0" />
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
 
           {/* Left Column: Editorial Headline & Actions (7 cols) */}
           <div className="lg:col-span-7 flex flex-col justify-center order-2 lg:order-1">
-            
-            {/* Monospace/Sans Sub-label */}
-            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#00AA5B] mb-4">
-              <span className="w-2 h-2 rounded-full bg-[#00AA5B]" />
-              <span>Official Store {storeName || 'Al-Kautsar Herbal'}</span>
-            </div>
 
-            {/* Display Headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-extrabold text-[#111827] tracking-tight leading-[1.12] mb-5">
-              Solusi Kesehatan Alami Keluarga dari <span className="text-[#00AA5B] underline decoration-[#00AA5B]/30 decoration-wavy decoration-2 underline-offset-4">Herbal Pilihan</span>.
+            {/* Display Headline - Direct & Bold */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] font-serif font-bold text-[#111827] tracking-tight leading-[1.15] mb-5">
+              Solusi Kesehatan Alami Keluarga dari <span className="italic font-normal text-[var(--color-dark-green)] underline decoration-[var(--color-primary-green)]/35 decoration-wavy decoration-2 underline-offset-8">Herbal Pilihan</span>.
             </h1>
 
             {/* Concise Value Proposition */}
@@ -53,7 +47,7 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
                 className="inline-flex items-center justify-center gap-2.5 bg-[#00AA5B] hover:bg-[#008f4c] active:scale-[0.98] text-white font-semibold px-7 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-150 text-sm md:text-base group"
               >
                 <span>Belanja Sekarang</span>
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={18} weight="bold" className="transition-transform group-hover:translate-x-1" />
               </Link>
 
               <a
@@ -62,7 +56,7 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-[0.98] text-[#1f2937] border border-[#d1d5db] font-semibold px-6 py-3.5 rounded-xl transition-all duration-150 text-sm md:text-base shadow-2xs hover:border-gray-400"
               >
-                <MessageCircle className="w-4 h-4 text-[#00AA5B]" />
+                <WhatsappLogo size={20} weight="duotone" className="text-[#00AA5B]" />
                 <span>Konsultasi Produk</span>
               </a>
             </div>
@@ -70,15 +64,15 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
             {/* Trust Standard Strip */}
             <div className="pt-6 border-t border-[#e5e0d3] flex flex-wrap items-center gap-x-6 gap-y-2.5 text-xs text-[#374151]">
               <div className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-[#00AA5B] shrink-0" />
+                <CheckCircle size={17} weight="fill" className="text-[#00AA5B] shrink-0" />
                 <span>100% Produk Original</span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-[#00AA5B] shrink-0" />
+                <CheckCircle size={17} weight="fill" className="text-[#00AA5B] shrink-0" />
                 <span>Terdaftar Resmi BPOM</span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-[#00AA5B] shrink-0" />
+                <CheckCircle size={17} weight="fill" className="text-[#00AA5B] shrink-0" />
                 <span>Sertifikat Halal MUI</span>
               </div>
             </div>
@@ -108,8 +102,8 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
 
                 {/* Bottom Story Caption (Unobstructed typography) */}
                 <div className="absolute bottom-6 left-6 right-6 text-white z-10">
-                  <div className="inline-flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide mb-2">
-                    <Leaf className="w-3 h-3 text-[#52d694]" />
+                  <div className="inline-flex items-center gap-1.5 bg-[#122b1c]/90 border border-white/20 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide mb-2">
+                    <Plant size={14} weight="duotone" className="text-[#52d694]" />
                     <span>Bahan Alami Nusantara</span>
                   </div>
                   <p className="text-sm sm:text-base font-semibold text-white/95 leading-relaxed drop-shadow-sm max-w-sm">
@@ -119,9 +113,9 @@ export default function HomeHeroClient({ storeName, bannerUrl }: HomeHeroClientP
               </div>
 
               {/* Side Floating Authenticity Badge (Positioned at Top-Right without overlapping text) */}
-              <div className="hidden sm:flex absolute -top-4 -right-4 bg-white/95 backdrop-blur-md p-3 rounded-xl shadow-xl border border-[#e5dfd2] items-center gap-3 z-20 transition-transform hover:-translate-y-0.5">
+              <div className="hidden sm:flex absolute -top-4 -right-4 bg-white p-3 rounded-xl shadow-lg border border-[#e5dfd2] items-center gap-3 z-20 transition-transform hover:-translate-y-0.5">
                 <div className="w-9 h-9 rounded-lg bg-[#e8f5e9] flex items-center justify-center text-[#00AA5B] shrink-0 font-bold text-base">
-                  <ShieldCheck className="w-5 h-5 text-[#00AA5B]" />
+                  <ShieldCheck size={20} weight="duotone" className="text-[#00AA5B]" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-gray-900 leading-tight">Jaminan Asli 100%</p>

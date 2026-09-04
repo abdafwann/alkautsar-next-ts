@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, Store, BookOpen } from 'lucide-react';
+import { List, Storefront, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 
 import { useCartStore } from '@/store/useCartStore';
@@ -49,6 +49,8 @@ export default function Navbar({ storeSettings }: NavbarProps = {}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isCartSyncedRef = useRef(false);
+
   // Fetch categories and user session on mount
   useEffect(() => {
     if (pathname.startsWith('/admin')) return;
@@ -62,17 +64,31 @@ export default function Navbar({ storeSettings }: NavbarProps = {}) {
     getAuthSession().then((session) => {
       if (session) {
         setUser({ name: session.name, email: session.email });
-        getDbCart().then((res) => {
-          if (res.success && res.data) {
-            useCartStore.getState().setCart(res.data);
-          }
+        if (!isCartSyncedRef.current) {
+          isCartSyncedRef.current = true;
+          getDbCart().then((res) => {
+            if (res.success && Array.isArray(res.data)) {
+              const localItems = useCartStore.getState().items;
+              if (localItems.length === 0 && res.data.length > 0) {
+                useCartStore.getState().setCart(res.data);
+              } else if (localItems.length > 0 && res.data.length > 0) {
+                const localIds = new Set(localItems.map((i) => i.id));
+                const newFromDb = res.data.filter((i: any) => !localIds.has(i.id));
+                if (newFromDb.length > 0) {
+                  useCartStore.getState().setCart([...localItems, ...newFromDb]);
+                }
+              }
+            }
+            setIsSyncing(false);
+          });
+        } else {
           setIsSyncing(false);
-        });
+        }
       } else {
         setIsSyncing(false);
       }
     });
-  }, [pathname]);
+  }, []);
 
   const toggleDropdown = (dropdown: 'category' | 'cart' | 'wishlist' | 'profile') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -146,7 +162,7 @@ export default function Navbar({ storeSettings }: NavbarProps = {}) {
                   : 'text-gray-700 hover:text-[var(--color-primary-green)] hover:bg-[var(--color-secondary-green)]'
               }`}
             >
-              <Store size={15} />
+              <Storefront size={16} weight="duotone" />
               <span>Shop</span>
             </Link>
 
@@ -159,7 +175,7 @@ export default function Navbar({ storeSettings }: NavbarProps = {}) {
                   : 'text-gray-700 hover:text-[var(--color-primary-green)] hover:bg-[var(--color-secondary-green)]'
               }`}
             >
-              <BookOpen size={15} />
+              <BookOpen size={16} weight="duotone" />
               <span>Artikel</span>
             </Link>
 
@@ -208,7 +224,7 @@ export default function Navbar({ storeSettings }: NavbarProps = {}) {
               className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Buka Menu"
             >
-              <Menu size={22} />
+              <List size={22} weight="bold" />
             </button>
           </div>
 

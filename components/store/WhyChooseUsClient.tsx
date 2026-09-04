@@ -53,7 +53,7 @@ export default function WhyChooseUsClient() {
               viewport={{ once: true, amount: 0.1 }}
             >
               {/* Feature 1 - Offset slightly right */}
-              <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-sm border border-secondary-cream rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 ml-0 lg:ml-12 hover:bg-white hover:border-accent-brown/30 transition-all shadow-sm hover:shadow-lg group">
+              <motion.div variants={itemVariants} className="bg-[#fdfcf9] border border-[#eee9df] rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 ml-0 lg:ml-12 hover:bg-white hover:border-[#ded6c7] hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 group">
                 <div className="w-14 h-14 rounded-full bg-secondary-cream flex items-center justify-center text-accent-brown shrink-0 group-hover:scale-110 group-hover:bg-primary-green group-hover:text-white transition-all duration-300">
                   <Leaf className="w-7 h-7" strokeWidth={1.5} />
                 </div>
@@ -64,7 +64,7 @@ export default function WhyChooseUsClient() {
               </motion.div>
 
               {/* Feature 2 - Offset slightly left */}
-              <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-sm border border-secondary-cream rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 mr-0 lg:mr-8 hover:bg-white hover:border-accent-brown/30 transition-all shadow-sm hover:shadow-lg group">
+              <motion.div variants={itemVariants} className="bg-[#fdfcf9] border border-[#eee9df] rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 mr-0 lg:mr-8 hover:bg-white hover:border-[#ded6c7] hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 group">
                 <div className="w-14 h-14 rounded-full bg-secondary-cream flex items-center justify-center text-accent-brown shrink-0 group-hover:scale-110 group-hover:bg-primary-green group-hover:text-white transition-all duration-300">
                   <ShieldCheck className="w-7 h-7" strokeWidth={1.5} />
                 </div>
@@ -75,7 +75,7 @@ export default function WhyChooseUsClient() {
               </motion.div>
 
               {/* Feature 3 - Offset further right */}
-              <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-sm border border-secondary-cream rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 ml-0 lg:ml-20 hover:bg-white hover:border-accent-brown/30 transition-all shadow-sm hover:shadow-lg group">
+              <motion.div variants={itemVariants} className="bg-[#fdfcf9] border border-[#eee9df] rounded-[24px] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 ml-0 lg:ml-20 hover:bg-white hover:border-[#ded6c7] hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 group">
                 <div className="w-14 h-14 rounded-full bg-secondary-cream flex items-center justify-center text-accent-brown shrink-0 group-hover:scale-110 group-hover:bg-primary-green group-hover:text-white transition-all duration-300">
                   <Truck className="w-7 h-7" strokeWidth={1.5} />
                 </div>

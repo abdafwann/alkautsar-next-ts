@@ -27,9 +27,16 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Daftar Transaksi</h2>
-        <p className="text-xs text-gray-500 mt-1">Pantau dan kelola riwayat pesanan Anda.</p>
+      <div className="pb-5 border-b border-[#ede8de]">
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-accent-brown block mb-1">
+          Riwayat &amp; Status
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-text-main tracking-tight">
+          Pesanan &amp; Transaksi
+        </h2>
+        <p className="text-xs text-text-main/70 mt-1 leading-relaxed">
+          Pantau status pemrosesan paket fitofarmaka, riwayat pembayaran, dan nomor resi pengiriman.
+        </p>
       </div>
 
       <OrdersListClient initialOrders={serializedOrders} />

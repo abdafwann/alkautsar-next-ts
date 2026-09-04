@@ -20,7 +20,7 @@ export default async function ContactPage() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-black mb-6 font-heading tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-green to-green-700 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h1 className="text-4xl md:text-5xl font-black mb-6 font-heading tracking-tight text-[var(--color-dark-green)] animate-in fade-in slide-in-from-bottom-4 duration-700">
               Hubungi Kami
             </h1>
             <p className="text-lg text-gray-600 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">

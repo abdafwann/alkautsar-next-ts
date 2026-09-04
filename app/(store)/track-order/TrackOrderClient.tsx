@@ -4,26 +4,25 @@ import { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Search,
+  MagnifyingGlass,
   Package,
   MapPin,
   Truck,
-  CheckCircle2,
-  ChevronRight,
-  Loader2,
-  AlertCircle,
+  CheckCircle,
+  CaretRight,
+  CircleNotch,
+  WarningCircle,
   CreditCard,
   ArrowLeft,
   Clock,
   ShieldCheck,
   Copy,
   Check,
-  HelpCircle,
-  Box,
-  RotateCcw,
-  AlertTriangle,
-  MessageCircle
-} from 'lucide-react';
+  Question,
+  ArrowsClockwise,
+  Warning,
+  ChatCircleDots
+} from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import Script from 'next/script';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -289,7 +288,7 @@ function TrackOrderContent() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-2.5 text-xs text-gray-500 flex items-center gap-2">
           <Link href="/" className="hover:text-primary-green transition-colors">Beranda</Link>
-          <ChevronRight size={13} className="text-gray-400" />
+          <CaretRight size={13} className="text-gray-400" />
           <span className="text-gray-900 font-medium">Lacak Pesanan</span>
         </div>
       </div>
@@ -354,12 +353,12 @@ function TrackOrderContent() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 size={13} className="animate-spin" />
+                    <CircleNotch size={13} className="animate-spin" />
                     <span>Mencari...</span>
                   </>
                 ) : (
                   <>
-                    <Search size={13} />
+                    <MagnifyingGlass size={13} />
                     <span>Lacak</span>
                   </>
                 )}
@@ -369,7 +368,7 @@ function TrackOrderContent() {
 
           {error && (
             <div className="mt-3 p-2.5 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2 text-xs">
-              <AlertCircle size={14} className="shrink-0 text-red-600" />
+              <WarningCircle size={14} className="shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
           )}
@@ -488,7 +487,7 @@ function TrackOrderContent() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                     <div className="flex items-start gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-primary-green text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                        <CheckCircle2 size={16} />
+                        <CheckCircle size={16} weight="fill" />
                       </div>
                       <div>
                         <h4 className="font-bold text-gray-900">
@@ -509,7 +508,7 @@ function TrackOrderContent() {
                         onClick={() => setShowComplaintModal(true)}
                         className="flex-1 sm:flex-none px-3.5 py-2 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                       >
-                        <AlertTriangle size={13} className="text-amber-700" />
+                        <Warning size={13} className="text-amber-700" weight="fill" />
                         <span>Ajukan Komplain</span>
                       </button>
 
@@ -533,7 +532,7 @@ function TrackOrderContent() {
                 <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-start gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                      <RotateCcw size={15} />
+                      <ArrowsClockwise size={15} />
                     </div>
                     <div>
                       <h4 className="font-bold text-amber-950">Pengajuan Komplain / Retur Sedang Ditinjau</h4>
@@ -548,7 +547,7 @@ function TrackOrderContent() {
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shrink-0 transition-colors shadow-2xs"
                   >
-                    <MessageCircle size={14} />
+                    <ChatCircleDots size={14} weight="fill" />
                     <span>Chat CS WhatsApp</span>
                   </a>
                 </div>
@@ -558,7 +557,7 @@ function TrackOrderContent() {
               {orderData.orderStatus === 'COMPLETED' && (
                 <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 size={15} className="text-primary-green shrink-0" />
+                    <CheckCircle size={15} className="text-primary-green shrink-0" weight="fill" />
                     <span className="font-semibold text-emerald-900">
                       Pesanan telah selesai. Terima kasih telah berbelanja di Al-Kautsar Herbal!
                     </span>
@@ -601,10 +600,11 @@ function TrackOrderContent() {
                             alt={item.product.title}
                             width={40}
                             height={40}
-                            className="max-h-full object-contain"
+                            style={{ width: 'auto', height: 'auto' }}
+                            className="max-h-full max-w-full object-contain"
                           />
                         ) : (
-                          <Box size={16} className="text-gray-300" />
+                          <Package size={16} className="text-gray-300" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -744,7 +744,7 @@ function TrackOrderContent() {
             {/* Help Footnote */}
             <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2 text-gray-500">
-                <HelpCircle size={14} className="text-gray-400 shrink-0" />
+                <Question size={14} className="text-gray-400 shrink-0" />
                 <span>Butuh bantuan terkait pesanan ini?</span>
               </div>
               <a
@@ -754,7 +754,7 @@ function TrackOrderContent() {
                 className="font-bold text-primary-green hover:underline flex items-center gap-1"
               >
                 <span>Hubungi Customer Service via WhatsApp</span>
-                <ChevronRight size={13} />
+                <CaretRight size={13} />
               </a>
             </div>
 
@@ -771,7 +771,7 @@ function TrackOrderContent() {
             >
               {/* Header Icon */}
               <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border border-emerald-100 shadow-2xs">
-                <CheckCircle2 size={28} className="text-primary-green" />
+                <CheckCircle size={28} className="text-primary-green" weight="fill" />
               </div>
 
               {/* Title & Description */}
@@ -815,7 +815,7 @@ function TrackOrderContent() {
                 >
                   {isConfirming ? (
                     <>
-                      <Loader2 size={13} className="animate-spin" />
+                      <CircleNotch size={13} className="animate-spin" />
                       <span>Memproses...</span>
                     </>
                   ) : (
@@ -841,7 +841,7 @@ function TrackOrderContent() {
               {/* Header Icon & Title */}
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 bg-amber-50 rounded-full flex items-center justify-center border border-amber-200 shrink-0">
-                  <AlertTriangle size={22} className="text-amber-600" />
+                  <Warning size={22} className="text-amber-600" weight="fill" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900">
@@ -896,12 +896,12 @@ function TrackOrderContent() {
                   >
                     {isSubmittingComplaint ? (
                       <>
-                        <Loader2 size={13} className="animate-spin" />
+                        <CircleNotch size={13} className="animate-spin" />
                         <span>Mengirim...</span>
                       </>
                     ) : (
                       <>
-                        <MessageCircle size={14} />
+                        <ChatCircleDots size={14} weight="fill" />
                         <span>Kirim & Hubungi CS</span>
                       </>
                     )}
@@ -922,7 +922,7 @@ export default function TrackOrderClient() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#fcfbf9] flex items-center justify-center">
-          <Loader2 className="animate-spin text-primary-green" size={28} />
+          <CircleNotch className="animate-spin text-primary-green" size={28} />
         </div>
       }
     >

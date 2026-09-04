@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath, unstable_cache } from 'next/cache';
 import { requireAdmin } from '@/lib/auth-guard';
 import { recordAdminLog } from './admin-logs';
+import { sanitizeString, validateProduct } from '@/lib/validation';
 
 // --- CATEGORY ACTIONS ---
 
@@ -31,7 +32,8 @@ export async function createCategory(formData: FormData) {
   try {
     const admin = await requireAdmin();
 
-    const name = formData.get('name') as string;
+    const rawName = formData.get('name') as string;
+    const name = sanitizeString(rawName).slice(0, 100);
     
     if (!name || name.trim() === '') {
       return { success: false, error: 'Nama kategori harus diisi' };
@@ -85,7 +87,8 @@ export async function updateCategory(id: string, formData: FormData) {
   try {
     const admin = await requireAdmin();
 
-    const name = formData.get('name') as string;
+    const rawName = formData.get('name') as string;
+    const name = sanitizeString(rawName).slice(0, 100);
     
     if (!name || name.trim() === '') {
       return { success: false, error: 'Nama kategori harus diisi' };
@@ -200,12 +203,42 @@ export async function saveProduct(id: string | null, data: any) {
   try {
     const admin = await requireAdmin();
 
-    const { title, slug, uses, price, categoryId, productForm, composition, directions, warnings, certificate, quantity, images, isPromo, promoPercentage, promoPrice, promoExpiry } = data;
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Data produk tidak valid' };
+    }
+
+    const { images } = data;
+
+    const sanitizedInput = {
+      title: sanitizeString(data.title).slice(0, 200),
+      slug: sanitizeString(data.slug).toLowerCase().trim().slice(0, 200),
+      uses: sanitizeString(data.uses).slice(0, 2000),
+      price: typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price),
+      categoryId: sanitizeString(data.categoryId),
+      productForm: sanitizeString(data.productForm).slice(0, 50),
+      composition: data.composition ? sanitizeString(data.composition).slice(0, 2000) : '',
+      directions: sanitizeString(data.directions).slice(0, 1000),
+      warnings: data.warnings ? sanitizeString(data.warnings).slice(0, 1000) : '',
+      certificate: sanitizeString(data.certificate).slice(0, 100),
+      quantity: typeof data.quantity === 'string' ? parseInt(data.quantity, 10) : Number(data.quantity),
+      isPromo: data.isPromo === true || data.isPromo === 'true',
+      promoPercentage: data.promoPercentage !== undefined && data.promoPercentage !== null && data.promoPercentage !== '' ? parseFloat(String(data.promoPercentage)) : null,
+      promoPrice: data.promoPrice !== undefined && data.promoPrice !== null && data.promoPrice !== '' ? parseFloat(String(data.promoPrice)) : null,
+      promoExpiry: data.promoExpiry ? String(data.promoExpiry) : null,
+    };
+
+    const validation = validateProduct(sanitizedInput);
+    if (!validation.success) {
+      const errorMsg = Object.values(validation.errors).join(', ');
+      return { success: false, error: `Validasi gagal: ${errorMsg}` };
+    }
+
+    const validData = validation.data;
 
     // Validate slug uniqueness
     const existingSlug = await prisma.product.findFirst({
       where: { 
-        slug,
+        slug: validData.slug,
         id: id ? { not: id } : undefined
       }
     });
@@ -215,21 +248,21 @@ export async function saveProduct(id: string | null, data: any) {
     }
 
     const payload = {
-      title,
-      slug,
-      uses,
-      price: parseFloat(price),
-      categoryId,
-      productForm,
-      composition,
-      directions,
-      warnings,
-      certificate,
-      quantity: parseInt(quantity),
-      isPromo: isPromo === true || isPromo === 'true',
-      promoPercentage: promoPercentage ? parseFloat(promoPercentage) : null,
-      promoPrice: promoPrice ? parseFloat(promoPrice) : null,
-      promoExpiry: promoExpiry ? new Date(promoExpiry) : null,
+      title: validData.title,
+      slug: validData.slug,
+      uses: validData.uses,
+      price: validData.price,
+      categoryId: validData.categoryId,
+      productForm: validData.productForm,
+      composition: validData.composition || null,
+      directions: validData.directions,
+      warnings: validData.warnings || null,
+      certificate: validData.certificate,
+      quantity: validData.quantity,
+      isPromo: validData.isPromo,
+      promoPercentage: validData.promoPercentage ?? null,
+      promoPrice: validData.promoPrice ?? null,
+      promoExpiry: validData.promoExpiry ? new Date(validData.promoExpiry) : null,
     };
 
     if (id) {
@@ -396,16 +429,33 @@ export async function getProductsByCategory(categoryId: string) {
 }
 
 export async function getShopProducts(filters?: {
+  query?: string;
   categoryId?: string;
   productForms?: string[];
   minPrice?: number;
   maxPrice?: number;
+  inStock?: boolean;
   page?: number;
   limit?: number;
   sort?: string;
 }) {
   try {
     let whereClause: any = {};
+
+    if (filters?.inStock) {
+      whereClause.quantity = { gt: 0 };
+    }
+
+    if (filters?.query) {
+      const cleanQuery = typeof filters.query === 'string' ? sanitizeString(filters.query).slice(0, 100).trim() : '';
+      if (cleanQuery) {
+        whereClause.OR = [
+          { title: { contains: cleanQuery, mode: 'insensitive' } },
+          { uses: { contains: cleanQuery, mode: 'insensitive' } },
+          { slug: { contains: cleanQuery, mode: 'insensitive' } },
+        ];
+      }
+    }
 
     if (filters?.categoryId) {
       whereClause.categoryId = filters.categoryId;
@@ -478,15 +528,17 @@ export async function getShopProducts(filters?: {
 
 export async function searchProductsLive(query: string) {
   try {
-    if (!query || query.trim().length < 2) {
+    const cleanQuery = typeof query === 'string' ? sanitizeString(query).slice(0, 100).trim() : '';
+
+    if (!cleanQuery || cleanQuery.length < 2) {
       return { success: true, data: [] };
     }
 
     const products = await prisma.product.findMany({
       where: {
         OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { slug: { contains: query, mode: 'insensitive' } },
+          { title: { contains: cleanQuery, mode: 'insensitive' } },
+          { slug: { contains: cleanQuery, mode: 'insensitive' } },
         ],
       },
       include: {

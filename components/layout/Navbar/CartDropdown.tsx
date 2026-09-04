@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Trash, ArrowRight } from '@phosphor-icons/react';
 import { useCartStore } from '@/store/useCartStore';
 import { removeFromDbCart } from '@/app/actions/cart';
 
@@ -64,7 +64,7 @@ export function CartDropdown({
         title="Keranjang Belanja"
         aria-label="Keranjang Belanja"
       >
-        <ShoppingCart size={19} />
+        <ShoppingCart size={19} weight="duotone" />
         {!isSyncing && totalItems > 0 && (
           <span className="absolute -top-1 -right-1 bg-[var(--color-primary-green)] text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-xs">
             {totalItems > 99 ? '99+' : totalItems}
@@ -89,7 +89,7 @@ export function CartDropdown({
               onClick={onClose}
               className="text-[11px] font-bold text-[var(--color-primary-green)] hover:underline flex items-center gap-0.5"
             >
-              Lihat Semua <ArrowRight size={12} />
+              Lihat Semua <ArrowRight size={12} weight="bold" />
             </Link>
           </div>
 
@@ -97,7 +97,7 @@ export function CartDropdown({
           <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
             {cartItems.length === 0 ? (
               <div className="py-8 text-center px-4">
-                <ShoppingBag size={32} className="text-gray-300 mx-auto mb-2" />
+                <ShoppingBag size={32} weight="duotone" className="text-gray-300 mx-auto mb-2" />
                 <p className="text-xs text-gray-500 font-medium">Keranjang masih kosong</p>
                 <Link
                   href="/shop"
@@ -116,7 +116,8 @@ export function CartDropdown({
                       alt={item.title}
                       width={40}
                       height={40}
-                      className="object-contain p-0.5"
+                      style={{ width: 'auto', height: 'auto' }}
+                      className="max-h-full max-w-full object-contain p-0.5"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -135,7 +136,7 @@ export function CartDropdown({
                     className="text-gray-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
                     title="Hapus"
                   >
-                    <Trash2 size={13} />
+                    <Trash size={14} weight="duotone" />
                   </button>
                 </div>
               ))

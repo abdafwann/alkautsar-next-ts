@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { Category } from './types';
 
 interface CategoryDropdownProps {
@@ -37,8 +37,9 @@ export function CategoryDropdown({
         }`}
       >
         <span>Kategori</span>
-        <ChevronDown
+        <CaretDown
           size={14}
+          weight="bold"
           className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[var(--color-primary-green)]' : 'text-gray-400'}`}
         />
       </button>

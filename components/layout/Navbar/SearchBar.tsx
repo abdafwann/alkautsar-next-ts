@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { searchProductsLive } from '@/app/actions/catalog';
 import { SearchProduct } from './types';
@@ -97,53 +97,61 @@ export function SearchBar({ className }: SearchBarProps) {
           type="submit"
           className="absolute right-0 top-0 h-full text-text-main/40 hover:text-text-main transition-colors"
         >
-          <Search size={18} strokeWidth={1.2} />
+          <MagnifyingGlass size={18} weight="duotone" />
         </button>
 
-        {/* Search Dropdown */}
+        {/* Search Dropdown Panel (Soft Floating Elevation & Rounded-2xl) */}
         {showDropdown && query.trim().length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-4 bg-white shadow-xl border border-gray-100 overflow-hidden z-50 animate-slide-down">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.1)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150 py-1.5 border border-gray-100">
             {isSearching ? (
-              <div className="p-4 text-center text-sm text-gray-400 animate-pulse">
-                Mencari...
+              <div className="p-4 text-center text-xs text-gray-400 animate-pulse font-medium">
+                Mencari produk herbal...
               </div>
             ) : results.length > 0 ? (
               <div className="flex flex-col">
-                {results.map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/product/${product.slug}`}
-                    onClick={handleResultClick}
-                    className="flex items-center gap-3 p-3 hover:bg-green-50 transition-colors border-b border-gray-50 last:border-0"
+                <div className="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-50">
+                  Hasil Pencarian
+                </div>
+                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                  {results.map((product) => (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.slug}`}
+                      onClick={handleResultClick}
+                      className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-emerald-50/60 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 relative border border-gray-100">
+                        <Image
+                          src={product.images?.[0]?.url || 'https://placehold.co/100'}
+                          alt={product.title}
+                          width={40}
+                          height={40}
+                          style={{ width: 'auto', height: 'auto' }}
+                          className="max-h-full max-w-full object-contain p-0.5"
+                        />
+                      </div>
+                      <div className="flex-grow min-w-0 flex justify-between items-center gap-2">
+                        <h4 className="text-xs font-bold text-gray-900 truncate hover:text-[var(--color-primary-green)]">
+                          {product.title}
+                        </h4>
+                        <span className="text-[10px] font-semibold text-[var(--color-primary-green)] bg-emerald-50 px-2 py-0.5 rounded-md whitespace-nowrap shrink-0">
+                          {product.category?.name || 'Herbal'}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-gray-100 bg-gray-50/50">
+                  <button
+                    type="submit"
+                    className="w-full py-2 text-center text-xs text-[var(--color-primary-green)] hover:text-white font-bold bg-white hover:bg-[var(--color-primary-green)] rounded-xl border border-emerald-100 transition-all cursor-pointer shadow-2xs"
                   >
-                    <div className="w-10 h-10 rounded-md bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 relative">
-                      <Image
-                        src={product.images?.[0]?.url || 'https://placehold.co/100'}
-                        alt={product.title}
-                        width={40}
-                        height={40}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-grow min-w-0 flex justify-between items-center gap-2">
-                      <h4 className="text-sm font-bold text-gray-900 truncate">
-                        {product.title}
-                      </h4>
-                      <p className="text-[11px] text-primary-green bg-green-50 px-2 py-1 rounded-sm whitespace-nowrap shrink-0">
-                        {product.category?.name || 'Produk'}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-                <button
-                  type="submit"
-                  className="w-full p-3 text-sm text-primary-green font-bold bg-green-50/50 hover:bg-green-100 transition-colors cursor-pointer"
-                >
-                  Lihat semua hasil untuk &ldquo;{query}&rdquo;
-                </button>
+                    Lihat semua hasil untuk &ldquo;{query}&rdquo;
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
+              <div className="p-4 text-center text-xs text-gray-500 font-medium">
                 Tidak ada produk ditemukan
               </div>
             )}

@@ -84,6 +84,7 @@ interface Order {
   createdAt: Date | string;
   resi?: string | null;
   courier?: string | null;
+  cancellationReason?: string | null;
   items?: Array<{
     id: string;
     name: string;
@@ -149,7 +150,7 @@ export default function OrderListClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetStatus, setTargetStatus] = useState<string>('');
   const [resi, setResi] = useState('');
-  const [courier, setCourier] = useState('JNE');
+  const [courier, setCourier] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchOrders = useCallback(async (page: number = 1) => {
@@ -195,7 +196,7 @@ export default function OrderListClient({
   const openUpdateModal = (order: Order) => {
     setSelectedOrder(order);
     setResi(order.resi || '');
-    setCourier(order.courier || 'JNE');
+    setCourier(order.courier || '');
     setTargetStatus('');
     setIsModalOpen(true);
   };
@@ -218,16 +219,22 @@ export default function OrderListClient({
       return;
     }
 
-    if (nextStatus === 'IN_DELIVERY' && !resi.trim()) {
-      toast.error(locale === 'EN' ? 'Courier tracking number is required for shipping' : 'Nomor resi wajib diisi untuk pengiriman');
+    const isShipping = nextStatus === 'IN_DELIVERY';
+    if (isShipping && (!resi.trim() || !courier.trim())) {
+      toast.error(locale === 'EN' ? 'Courier and tracking number are required for shipping' : 'Nomor resi dan kurir wajib diisi untuk pengiriman');
       return;
     }
 
     setIsSubmitting(true);
+    /*
+     * Kurir dan resi hanya dikirim jika pesanan dialihkan ke pengiriman (IN_DELIVERY).
+     * Saat status masih tahap pengemasan (PREPARING) atau sebelumnya, kurir dan resi tidak dikirim
+     * agar data tidak tercatat prematur di database.
+     */
     const res = await updateOrderStatus(selectedOrder.id, {
       status: nextStatus as any,
-      resi: resi.trim() || undefined,
-      courier: courier.trim() || undefined
+      resi: isShipping ? (resi.trim() || undefined) : undefined,
+      courier: isShipping ? (courier.trim() || undefined) : undefined
     });
 
     if (res.success) {
@@ -503,6 +510,14 @@ export default function OrderListClient({
                             <StatusIcon size={12} />
                             {statusLabel}
                           </Badge>
+                          {order.cancellationReason && (
+                            <span 
+                              className="text-[10px] text-amber-700 font-medium line-clamp-1 max-w-[160px] mt-0.5 cursor-help block"
+                              title={order.cancellationReason}
+                            >
+                              {order.cancellationReason}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1.5">
@@ -595,6 +610,31 @@ export default function OrderListClient({
                   </Badge>
                 </div>
               </div>
+
+              {/* Reason Alert (Cancellation or Complaint) */}
+              {selectedOrder.cancellationReason && (
+                <div className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                  selectedOrder.status === 'RETURN_REQUESTED' || selectedOrder.status === 'RETURNED'
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
+                    : 'bg-red-50 border-red-200 text-red-900'
+                }`}>
+                  <AlertCircle size={16} className={`shrink-0 mt-0.5 ${
+                    selectedOrder.status === 'RETURN_REQUESTED' || selectedOrder.status === 'RETURNED'
+                      ? 'text-amber-600'
+                      : 'text-red-600'
+                  }`} />
+                  <div>
+                    <span className="font-bold block">
+                      {selectedOrder.status === 'RETURN_REQUESTED' || selectedOrder.status === 'RETURNED'
+                        ? (locale === 'EN' ? 'Return / Complaint Reason:' : 'Alasan Pengajuan Komplain / Retur:')
+                        : (locale === 'EN' ? 'Cancellation Reason:' : 'Alasan Pembatalan Pesanan:')}
+                    </span>
+                    <p className="mt-0.5 leading-relaxed font-medium">
+                      {selectedOrder.cancellationReason}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Data Pelanggan & Alamat */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
@@ -740,7 +780,9 @@ export default function OrderListClient({
                     value={courier}
                     onChange={(e) => setCourier(e.target.value)}
                     className="w-full p-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-emerald-500"
+                    required
                   >
+                    <option value="">{locale === 'EN' ? '-- Select Courier --' : '-- Pilih Ekspedisi / Kurir --'}</option>
                     {COURIER_OPTIONS.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}

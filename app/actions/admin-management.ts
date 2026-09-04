@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 import { recordAdminLog } from './admin-logs';
+import { sanitizeString, isValidEmail } from '@/lib/validation';
 
 const secretKey = process.env.JWT_SECRET;
 
@@ -72,14 +73,21 @@ export async function createAdmin(formData: FormData) {
   }
 
   try {
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
+    const rawName = formData.get('name') as string;
+    const rawEmail = formData.get('email') as string;
     const password = formData.get('password') as string;
     const role = formData.get('role') as 'SUPERADMIN' | 'ADMIN';
     const masterKey = formData.get('master_key') as string;
 
+    const name = sanitizeString(rawName).slice(0, 100);
+    const email = typeof rawEmail === 'string' ? rawEmail.toLowerCase().trim() : '';
+
     if (!name || !email || !password || !role || !masterKey) {
       return { success: false, error: 'Semua field harus diisi termasuk Kode Keamanan' };
+    }
+
+    if (!isValidEmail(email)) {
+      return { success: false, error: 'Format email admin tidak valid' };
     }
 
     // Layer 1.5: Master Security Code (Sudo Mode)

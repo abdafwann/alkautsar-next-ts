@@ -35,9 +35,9 @@ export function HomeHero2({ heroProduct, onExploreClick }: HomeHero2Props) {
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight leading-[1.15] mb-5">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[var(--color-text-main)] tracking-tight leading-[1.15] mb-5">
               Kembalikan Sehat Alami{' '}
-              <span className="bg-gradient-to-r from-[var(--color-primary-green)] to-emerald-700 bg-clip-text text-transparent">
+              <span className="text-[var(--color-dark-green)] underline decoration-[var(--color-primary-green)]/35 decoration-wavy decoration-2 underline-offset-8">
                 Tanpa Beban Kimia
               </span>
             </h1>

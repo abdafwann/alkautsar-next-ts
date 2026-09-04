@@ -82,6 +82,7 @@ export async function getAdminOrders(filters: OrderFilters = {}) {
         createdAt: order.createdAt,
         resi: order.resi,
         courier: order.courier,
+        cancellationReason: order.cancellationReason || null,
         items: orderItems.map(item => ({
           id: item.id,
           name: item.product?.title || 'Produk Herbal',
@@ -147,8 +148,18 @@ export async function updateOrderStatus(
 
     const updateData: Record<string, unknown> = { orderStatus: status };
 
-    if (resi?.trim()) updateData.resi = resi.trim();
-    if (courier?.trim()) updateData.courier = courier.trim();
+    /*
+     * Kurir dan resi hanya valid di-assign saat paket telah diserahkan ke kurir (IN_DELIVERY, dsb).
+     * Saat status masih dalam tahap pengemasan (PREPARING) atau sebelumnya, kolom ini wajib tetap kosong (null)
+     * agar di sisi pembeli tidak muncul kurir prematur sebelum barang dikirim.
+     */
+    if (['IN_DELIVERY', 'DELIVERED', 'COMPLETED'].includes(status)) {
+      if (resi?.trim()) updateData.resi = resi.trim();
+      if (courier?.trim()) updateData.courier = courier.trim();
+    } else {
+      updateData.resi = null;
+      updateData.courier = null;
+    }
 
     await prisma.order.update({
       where: { id },

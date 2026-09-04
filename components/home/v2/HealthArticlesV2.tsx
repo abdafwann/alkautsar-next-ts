@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowUpRight } from '@phosphor-icons/react';
 
 interface ArticleItem {
   id: string;
@@ -49,17 +50,17 @@ const DUMMY_ARTICLES: ArticleItem[] = [
 
 export default function HealthArticlesV2() {
   return (
-    <section className="py-20 md:py-28 bg-white">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+    <section className="py-12 md:py-16 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Editorial Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-[#e5dfd3]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-5 border-b border-[#e5dfd3]">
           <div>
             <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-accent-brown block mb-2">
               Artikel Kesehatan Al-Kautsar
             </span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-text-main tracking-tight">
-              Edukasi & Wawasan Sehat Alami
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-text-main tracking-tight">
+              Edukasi & Wawasan <span className="italic font-normal text-dark-green">Sehat Alami</span>
             </h2>
           </div>
 
@@ -79,10 +80,12 @@ export default function HealthArticlesV2() {
               <div>
                 {/* Photo Frame (Clear, un-tinted) */}
                 <Link href={`/blog/${article.slug}`} className="block relative aspect-[16/10] rounded-2xl overflow-hidden bg-[#f0eae1] mb-5 border border-[#e8e2d8]">
-                  <img
+                  <Image
                     src={article.imageUrl}
                     alt={article.title}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-104"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-104"
                   />
                 </Link>
 

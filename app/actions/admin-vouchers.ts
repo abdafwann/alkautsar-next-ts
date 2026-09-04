@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth-guard';
 import { logAdminActivity } from '@/lib/adminLog';
 import { VoucherType } from '@prisma/client';
+import { sanitizeString } from '@/lib/validation';
 
 interface CreateVoucherInput {
   code: string;
@@ -47,6 +48,33 @@ export async function createVoucher(data: CreateVoucherInput) {
   try {
     const admin = await requireAdmin();
 
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Data voucher tidak valid' };
+    }
+
+    const cleanCode = sanitizeString(data.code).toUpperCase().trim();
+    if (!cleanCode || cleanCode.length < 3 || cleanCode.length > 30) {
+      return { success: false, error: 'Kode voucher harus terdiri dari 3-30 karakter.' };
+    }
+
+    const codeRegex = /^[A-Z0-9_-]+$/;
+    if (!codeRegex.test(cleanCode)) {
+      return { success: false, error: 'Kode voucher hanya boleh berisi huruf besar, angka, tanda hubung (-), atau garis bawah (_).' };
+    }
+
+    if (data.discountType !== 'PERCENTAGE' && data.discountType !== 'FIXED_AMOUNT') {
+      return { success: false, error: 'Tipe diskon tidak valid.' };
+    }
+
+    const discountVal = Number(data.discountValue);
+    if (isNaN(discountVal) || discountVal <= 0) {
+      return { success: false, error: 'Nilai diskon harus lebih besar dari 0.' };
+    }
+
+    if (data.discountType === 'PERCENTAGE' && discountVal > 100) {
+      return { success: false, error: 'Persentase diskon tidak boleh melebihi 100%.' };
+    }
+
     const expiry = new Date(data.expiryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -55,15 +83,27 @@ export async function createVoucher(data: CreateVoucherInput) {
       return { success: false, error: 'Tanggal berakhir voucher tidak boleh di masa lampau.' };
     }
 
+    // Check code uniqueness
+    const existing = await prisma.voucher.findUnique({
+      where: { code: cleanCode }
+    });
+    if (existing) {
+      return { success: false, error: 'Kode voucher sudah digunakan. Silakan buat kode lain.' };
+    }
+
+    const minOrderAmount = data.minOrderAmount ? Math.max(0, Number(data.minOrderAmount)) : null;
+    const maxDiscount = data.maxDiscount ? Math.max(0, Number(data.maxDiscount)) : null;
+    const usageLimit = data.usageLimit ? Math.max(1, Math.floor(Number(data.usageLimit))) : null;
+
     const voucher = await prisma.voucher.create({
       data: {
-        code: data.code.toUpperCase().trim(),
+        code: cleanCode,
         type: data.discountType as VoucherType,
-        discountValue: data.discountValue,
-        minOrderAmount: data.minOrderAmount,
-        maxDiscount: data.maxDiscount,
+        discountValue: discountVal,
+        minOrderAmount,
+        maxDiscount,
         expiryDate: expiry,
-        usageLimit: data.usageLimit,
+        usageLimit,
         isActive: true,
       },
     });

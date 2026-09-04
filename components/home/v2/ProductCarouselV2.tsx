@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Plus, Heart } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, Plus, Heart, Plant } from '@phosphor-icons/react';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import toast from 'react-hot-toast';
@@ -31,9 +32,23 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
     setMounted(true);
   }, []);
 
+  const cartItems = useCartStore((s) => s.items);
+
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const isOutOfStock = product.quantity !== undefined && product.quantity <= 0;
+    if (isOutOfStock) {
+      toast.error('Maaf, stok produk ini sedang habis.');
+      return;
+    }
+
+    const currentInCart = cartItems.find((i) => i.id === product.id)?.quantity || 0;
+    if (product.quantity !== undefined && currentInCart >= product.quantity) {
+      toast.error(`Stok maksimal (${product.quantity} item) sudah ada di keranjang Anda.`);
+      return;
+    }
 
     const imgUrl = product.images?.[0]?.url || '';
     const isPromoValid = product.promoPrice && product.promoPrice > 0 && (!product.promoExpiry || new Date(product.promoExpiry) >= now);
@@ -71,16 +86,16 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
   };
 
   return (
-    <section className="py-20 md:py-28 bg-[#faf9f6] border-b border-[#ede8de]/60">
-      <div className="max-w-7xl mx-auto px-4 md:px-8">
+    <section className="py-12 md:py-16 bg-[#faf9f6] border-b border-[#ede8de]/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
             <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-accent-brown block mb-2">
               Katalog Unggulan
             </span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-text-main tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-text-main tracking-tight">
               {title}
             </h2>
           </div>
@@ -90,7 +105,7 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
             className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-green hover:text-primary-green-hover transition-colors shrink-0"
           >
             <span>Buka Semua Produk ({products.length})</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={14} weight="bold" />
           </Link>
         </div>
 
@@ -108,35 +123,49 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
             return (
               <div
                 key={product.id}
-                className="group relative bg-[#faf9f6] rounded-2xl p-3 border border-[#eee9df] hover:border-primary-green/30 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                className="group relative bg-[#faf9f6] rounded-2xl p-3 border border-[#ede8de] hover:border-[#dcd6ca] hover:bg-white hover:shadow-[0_12px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Photo Container (Compact h-40 sm:h-44) */}
                   <div className="relative w-full h-36 sm:h-40 md:h-44 rounded-xl bg-white overflow-hidden flex items-center justify-center p-2.5 mb-2.5 border border-[#f0ece3]">
                     
-                    <Link href={`/product/${product.slug}`} className="block w-full h-full flex items-center justify-center">
+                    <Link href={`/product/${product.slug}`} className="block relative w-full h-full flex items-center justify-center">
                       {imgUrl ? (
-                        <img
-                          src={imgUrl}
-                          alt={productName}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
-                        />
-                      ) : (
-                        <div className="text-center p-2">
-                          <span className="text-xl">🌿</span>
-                          <p className="text-[11px] font-bold text-text-main mt-0.5">{productName}</p>
-                        </div>
-                      )}
-                    </Link>
-
-                    {/* Clean Promo Tag (Only shown if discounted) */}
-                    {isPromoValid && discountPercent > 0 && (
-                      <div className="absolute top-2 left-2 pointer-events-none">
-                        <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
-                          Hemat {discountPercent}%
-                        </span>
+                      <Image
+                        src={imgUrl}
+                        alt={productName}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                        className={`object-contain p-2 group-hover:scale-105 transition-transform duration-500 ease-out ${
+                          product.quantity !== undefined && product.quantity <= 0 ? 'opacity-55 grayscale-[25%]' : ''
+                        }`}
+                      />
+                    ) : (
+                      <div className="text-center p-2">
+                        <Plant size={22} weight="duotone" className="text-gray-300 mx-auto" />
+                        <p className="text-[11px] font-bold text-text-main mt-1">{productName}</p>
                       </div>
                     )}
+                  </Link>
+
+                  {/* Stock & Promo Tags */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none z-10">
+                    {product.quantity !== undefined && product.quantity <= 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                        Stok Habis
+                      </span>
+                    )}
+                    {product.quantity !== undefined && product.quantity > 0 && product.quantity <= 5 && (
+                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                        Sisa {product.quantity}
+                      </span>
+                    )}
+                    {product.quantity !== undefined && product.quantity > 0 && isPromoValid && discountPercent > 0 && (
+                      <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs">
+                        Hemat {discountPercent}%
+                      </span>
+                    )}
+                  </div>
 
                     {/* Wishlist Button */}
                     <button
@@ -168,6 +197,13 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
                         {productName}
                       </h3>
                     </Link>
+
+                    {/* Low stock / Out of stock label */}
+                    {product.quantity !== undefined && product.quantity <= 0 ? (
+                      <span className="text-[10px] font-bold text-red-600 block">Stok Habis</span>
+                    ) : product.quantity !== undefined && product.quantity > 0 && product.quantity <= 5 ? (
+                      <span className="text-[10px] font-bold text-amber-600 block">⚠️ Sisa {product.quantity} item!</span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -179,20 +215,32 @@ export default function ProductCarouselV2({ products, title = 'Produk Terlaris' 
                         {formatRupiah(product.price)}
                       </p>
                     )}
-                    <p className="text-sm sm:text-base font-extrabold text-primary-green leading-tight">
+                    <p className={`text-sm sm:text-base font-extrabold leading-tight ${
+                      product.quantity !== undefined && product.quantity <= 0 ? 'text-gray-400' : 'text-primary-green'
+                    }`}>
                       {formatRupiah(displayPrice)}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => handleAddToCart(product, e)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-green hover:bg-primary-green-hover active:scale-95 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                    title="Tambah ke Keranjang"
-                  >
-                    <Plus size={13} />
-                    <span>Beli</span>
-                  </button>
+                  {product.quantity !== undefined && product.quantity <= 0 ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-400 text-xs font-semibold rounded-lg cursor-not-allowed"
+                    >
+                      <span>Habis</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => handleAddToCart(product, e)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-green hover:bg-primary-green-hover active:scale-95 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                      title={product.quantity !== undefined && product.quantity <= 5 ? `Beli (Sisa ${product.quantity})` : 'Tambah ke Keranjang'}
+                    >
+                      <Plus size={13} />
+                      <span>{product.quantity !== undefined && product.quantity <= 5 ? `Sisa ${product.quantity}` : 'Beli'}</span>
+                    </button>
+                  )}
                 </div>
 
               </div>

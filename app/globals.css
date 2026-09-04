@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @theme {
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-heading: var(--font-serif), Georgia, serif;
+  --font-latin: var(--font-latin), cursive;
+
   --color-primary-green: #00AA5B;
   --color-primary-green-hover: #285430;
   --color-dark-green: #1f422e;
@@ -10,6 +14,7 @@
   --color-text-main: #1a1a1a;
   --color-secondary-cream: #faf7f2;
   --color-secondary-green: #e8f5e9;
+  --color-bg-store: #fcfbf9;
 
   --animate-slide-down: slide-down 0.2s ease-out forwards;
 

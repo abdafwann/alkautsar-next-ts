@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath, unstable_cache } from 'next/cache';
 import { uploadImage, deleteImage } from './upload';
 import { requireAdmin } from '@/lib/auth-guard';
+import { sanitizeString } from '@/lib/validation';
 
 export const getBanners = unstable_cache(
   async () => {
@@ -40,7 +41,8 @@ export async function uploadBannerData(formData: FormData) {
   try {
     await requireAdmin();
 
-    const title = formData.get('title') as string | null;
+    const rawTitle = formData.get('title') as string | null;
+    const cleanTitle = rawTitle ? sanitizeString(rawTitle).slice(0, 100) : 'Banner Baru';
     
     // Upload image first
     const uploadRes = await uploadImage(formData);
@@ -50,7 +52,7 @@ export async function uploadBannerData(formData: FormData) {
 
     const banner = await prisma.banner.create({
       data: {
-        title: title || 'Banner Baru',
+        title: cleanTitle || 'Banner Baru',
         publicId: uploadRes.data.publicId,
         url: uploadRes.data.url,
         isActive: false // Default off

@@ -10,6 +10,7 @@ import {
   maskName,
   maskAddress
 } from '@/lib/order-security';
+import { resolveMidtransStatus, processOrderPaymentTransition } from '@/lib/order-transition';
 
 export async function GET(
   request: Request,
@@ -63,18 +64,32 @@ export async function GET(
         });
 
         const statusRes = await coreApi.transaction.status(order.orderId);
-        if (statusRes && (statusRes.transaction_status === 'settlement' || statusRes.transaction_status === 'capture')) {
-          order.paymentStatus = 'PAID';
-          order.orderStatus = 'PROCESSING';
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              paymentStatus: 'PAID',
-              orderStatus: 'PROCESSING',
+        if (statusRes && statusRes.transaction_status) {
+          const { targetPaymentStatus, targetOrderStatus } = resolveMidtransStatus(
+            statusRes.transaction_status,
+            statusRes.fraud_status
+          );
+
+          if (targetPaymentStatus === 'PAID') {
+            await processOrderPaymentTransition({
+              orderId: order.id,
+              targetPaymentStatus,
+              targetOrderStatus,
               paymentType: statusRes.payment_type || 'qris',
-              paymentSettlement: statusRes.settlement_time || new Date().toISOString()
-            }
-          });
+              paymentSettlement: statusRes.settlement_time || new Date().toISOString(),
+            });
+            order.paymentStatus = 'PAID';
+            order.orderStatus = targetOrderStatus;
+          } else if (targetOrderStatus === 'CANCELLED' && order.orderStatus !== 'CANCELLED') {
+            await processOrderPaymentTransition({
+              orderId: order.id,
+              targetPaymentStatus: 'UNPAID',
+              targetOrderStatus: 'CANCELLED',
+              cancellationReason: `Pembayaran ${statusRes.transaction_status}`,
+            });
+            order.paymentStatus = 'UNPAID';
+            order.orderStatus = 'CANCELLED';
+          }
         }
       } catch {
         // Non-blocking fallback

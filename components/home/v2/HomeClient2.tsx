@@ -8,6 +8,7 @@ import FeaturedCategoriesV2 from './FeaturedCategoriesV2';
 import FlashSaleSectionV2 from './FlashSaleSectionV2';
 import HealthFocusExplorer from './HealthFocusExplorer';
 import ProductCarouselV2 from './ProductCarouselV2';
+import WhyAlKautsarBento from './WhyAlKautsarBento';
 import HealthArticlesV2 from './HealthArticlesV2';
 
 interface HomeClient2Props {
@@ -20,13 +21,14 @@ interface HomeClient2Props {
 }
 
 /**
- * /homeclient Sections Breakdown (1 - 6):
+ * /homeclient Sections Breakdown (1 - 7):
  * - Section 1: Original HomeHeroClient (Hero Banner)
  * - Section 2: FeaturedCategoriesV2 (Editorial Category Gallery)
  * - Section 3: FlashSaleSectionV2 (Live Countdown + Promo Shelf)
  * - Section 4: HealthFocusExplorer (Interactive Category & Health Focus Solution Explorer)
  * - Section 5: ProductCarouselV2 (Best Sellers Catalog)
- * - Section 6: HealthArticlesV2 (Edukasi & Artikel Kesehatan Herbal)
+ * - Section 6: WhyAlKautsarBento (TasteSkill v2 Asymmetrical Bento Grid Trust Story)
+ * - Section 7: HealthArticlesV2 (Edukasi & Artikel Kesehatan Herbal)
  */
 export default function HomeClient2({
   storeName,
@@ -53,7 +55,10 @@ export default function HomeClient2({
       {/* Section 5: Best Sellers Product Carousel */}
       <ProductCarouselV2 products={products} title="Produk Terlaris" />
 
-      {/* Section 6: Edukasi & Artikel Kesehatan Herbal */}
+      {/* Section 6: Standar Mutu & Bento Grid Keunggulan Fitofarmaka */}
+      <WhyAlKautsarBento />
+
+      {/* Section 7: Edukasi & Artikel Kesehatan Herbal */}
       <HealthArticlesV2 />
     </main>
   );

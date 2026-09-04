@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { CaretRight } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -41,9 +41,9 @@ export interface ProductDetailProps {
   relatedProducts: RelatedProductItem[];
 }
 
-/**
- * Main Product Details Page Orchestrator.
- * Delegates visual concerns to modular single-responsibility components in @/components/product/detail/.
+/*
+ * Komponen orkestrator detail produk memusatkan state transaksi (kuantitas, mutasi keranjang, wishlist) 
+ * agar sub-komponen tampilan tetap murni (presentational) dan mudah diuji secara modular
  */
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
@@ -55,22 +55,44 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   const isWishlisted = wishlistItems.some((i) => i.id === product.id);
 
-  // Price calculations
+  /*
+   * Normalisasi harga dan persentase promo dilakukan di level orkestrator 
+   * agar seluruh komponen turunan menampilkan kalkulasi diskon yang identik
+   */
   const originalPrice = Number(product.price);
   const promoPrice = product.promoPrice ? Number(product.promoPrice) : null;
   const currentPrice = promoPrice || originalPrice;
   const discountPercent = product.promoPercentage || (promoPrice ? Math.round(((originalPrice - promoPrice) / originalPrice) * 100) : 0);
 
-  // Accommodate up to 3 gallery photos
+  /*
+   * Membatasi galeri foto maksimal 3 slot dan menyediakan placeholder resmi 
+   * untuk menjaga rasio viewport dan menghindari layout shifting pada perangkat mobile
+   */
   const productImages = product.images && product.images.length > 0
     ? product.images.slice(0, 3)
     : [{ url: 'https://placehold.co/600x600/ffffff/00aa5b?text=Al-Kautsar+Herbal' }];
   
   const primaryImage = productImages[0]?.url;
 
+  const cartItems = useCartStore((s) => s.items);
+  const currentInCart = cartItems.find((i) => i.id === product.id)?.quantity || 0;
+
+  /*
+   * Pengecekan limit stok memadukan kuantitas yang sudah ada di cart dengan kuantitas baru 
+   * guna mencegah pesanan melebihi inventaris fisik yang tersedia
+   */
   const handleAddToCart = () => {
     if (product.quantity < 1) {
       toast.error('Maaf, stok produk ini sedang habis.');
+      return;
+    }
+    if (currentInCart + quantity > product.quantity) {
+      const remainingToAdd = Math.max(0, product.quantity - currentInCart);
+      if (remainingToAdd === 0) {
+        toast.error(`Stok maksimal (${product.quantity} item) sudah ada di keranjang belanja Anda.`);
+      } else {
+        toast.error(`Stok tidak mencukupi. Anda hanya dapat menambahkan ${remainingToAdd} item lagi (${currentInCart} sudah di keranjang).`);
+      }
       return;
     }
     addItem({
@@ -85,9 +107,17 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     toast.success(`${quantity}x ${product.title} ditambahkan ke keranjang`);
   };
 
+  /*
+   * Alur Beli Sekarang mengarahkan pelanggan langsung ke halaman checkout setelah item ditambahkan 
+   * untuk memangkas friksi langkah konversi transaksi
+   */
   const handleBuyNow = () => {
     if (product.quantity < 1) {
       toast.error('Maaf, stok produk ini sedang habis.');
+      return;
+    }
+    if (quantity > product.quantity) {
+      toast.error(`Stok tidak mencukupi. Stok tersedia: ${product.quantity}`);
       return;
     }
     addItem({
@@ -102,6 +132,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     router.push('/cart');
   };
 
+  /*
+   * Optimistic update pada local store dipadukan dengan sync asinkron ke database 
+   * agar tombol wishlist merespons instan tanpa hambatan latensi jaringan
+   */
   const handleToggleWishlist = async () => {
     toggleWishlistStore({
       id: product.id,
@@ -116,6 +150,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     toast.success(isWishlisted ? 'Dihapus dari wishlist' : 'Disimpan ke wishlist');
   };
 
+  /*
+   * Mendukung Web Share API bawaan perangkat mobile dengan fallback clipboard otomatis 
+   * pada browser desktop guna memastikan tautan produk selalu dapat disalin dengan mulus
+   */
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -125,7 +163,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           url: window.location.href,
         });
       } catch {
-        // User dismissed native share sheet
+        // Dialog share dibatalkan oleh pengguna, tidak memerlukan tindakan fallback
       }
     } else {
       await navigator.clipboard.writeText(window.location.href);
@@ -133,6 +171,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     }
   };
 
+  /*
+   * Pesan konsultasi WhatsApp menyertakan konteks URL produk aktif 
+   * agar tim herbalis dapat langsung merespons pertanyaan klinis pelanggan tanpa bertanya ulang
+   */
   const handleWhatsAppConsultation = () => {
     const adminPhone = '6281234567890';
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -141,35 +183,40 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen text-[#1a1a1a]">
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 md:py-4">
+    <div className="bg-[#fcfbf9] min-h-screen text-gray-900">
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 md:py-5">
         
-        {/* 1. Seamless Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="mb-3.5">
+        {/*
+         * Breadcrumb semantik berlatar netral memandu konteks kategori produk 
+         * dengan ikon Phosphor CaretRight yang konsisten
+         */}
+        <nav aria-label="Breadcrumb" className="mb-4">
           <div className="flex items-center gap-1.5 text-xs text-gray-500 overflow-x-auto whitespace-nowrap">
-            <Link href="/" className="hover:text-[var(--color-primary-green)] transition-colors">Beranda</Link>
-            <ChevronRight size={13} className="text-gray-400 shrink-0" />
-            <Link href="/shop" className="hover:text-[var(--color-primary-green)] transition-colors">Katalog Herbal</Link>
+            <Link href="/" className="hover:text-primary-green transition-colors">Beranda</Link>
+            <CaretRight size={12} weight="bold" className="text-gray-400 shrink-0" />
+            <Link href="/shop" className="hover:text-primary-green transition-colors">Katalog Herbal</Link>
             {product.category && (
               <>
-                <ChevronRight size={13} className="text-gray-400 shrink-0" />
+                <CaretRight size={12} weight="bold" className="text-gray-400 shrink-0" />
                 <Link 
                   href={`/shop?categoryId=${product.categoryId}`} 
-                  className="hover:text-[var(--color-primary-green)] transition-colors"
+                  className="hover:text-primary-green transition-colors"
                 >
                   {product.category.name}
                 </Link>
               </>
             )}
-            <ChevronRight size={13} className="text-gray-400 shrink-0" />
+            <CaretRight size={12} weight="bold" className="text-gray-400 shrink-0" />
             <span className="text-gray-900 font-medium truncate max-w-[200px] md:max-w-md">{product.title}</span>
           </div>
         </nav>
 
-        {/* 2. Main 3-Column Product Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
+        {/*
+         * Layout 3 kolom membagi fokus visual menjadi: Galeri Foto (4 col), 
+         * Lembar Informasi Klinis (5 col), dan Sticky Kotak Transaksi (3 col)
+         */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-          {/* Left Column: Direct Gallery (Col Span 4) */}
           <div className="lg:col-span-4 flex flex-col items-center lg:items-start gap-3">
             <ProductGallery
               title={product.title}
@@ -178,7 +225,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             />
           </div>
 
-          {/* Middle Column: Paper Container for Clinical Details (Col Span 5) */}
           <div className="lg:col-span-5 flex flex-col">
             <ProductClinicalInfo
               categoryName={product.category?.name}
@@ -195,7 +241,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             />
           </div>
 
-          {/* Right Column: Sticky Purchase Action Card (Col Span 3) */}
           <div className="lg:col-span-3 flex flex-col">
             <ProductPurchaseBox
               quantity={quantity}
@@ -214,12 +259,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
         </div>
 
-        {/* 3. Related Products Shelf (With Empty State Fallback) */}
         <RelatedProductsSection relatedProducts={relatedProducts} />
 
       </main>
 
-      {/* 4. Mobile Fixed Bottom Action Bar */}
       <ProductMobileActionBar
         isOutOfStock={product.quantity < 1}
         isWishlisted={isWishlisted}

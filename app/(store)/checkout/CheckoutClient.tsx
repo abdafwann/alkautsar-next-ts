@@ -6,19 +6,22 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/useCartStore';
 import Link from 'next/link';
 import {
-  ChevronRight,
-  Loader2,
+  CaretRight,
+  CircleNotch,
   Tag,
   X,
   ShieldCheck,
-  PackageCheck,
+  Package,
   Lock,
   ArrowLeft,
-  Truck
-} from 'lucide-react';
+  Truck,
+  Plant
+} from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
-import Script from 'next/script';
+import { Button } from '@/components/ui/Button';
+import { Input, Textarea, Select } from '@/components/ui/Input';
 import { getProfile } from '@/app/actions/account';
+import { validateCartStock, clearDbCart } from '@/app/actions/cart';
 import { checkVoucher } from '@/app/actions/voucher';
 
 const JAVA_PROVINCES = [
@@ -75,30 +78,41 @@ export default function CheckoutClient() {
 
   useEffect(() => {
     setMounted(true);
-    if (useCartStore.getState().items.length === 0) {
+    const cartStateItems = useCartStore.getState().items;
+    if (cartStateItems.length === 0) {
       router.push('/cart');
-    } else {
-      const fetchProfile = async () => {
-        try {
-          const profile = await getProfile();
-          if (profile.success && profile.data) {
-            setFormData((prev) => ({
-              ...prev,
-              name: profile.data.name || '',
-              email: profile.data.email || '',
-              phone: profile.data.mobile || '',
-              address: profile.data.address || '',
-              province: profile.data.province || '',
-              city: profile.data.city || '',
-              postalCode: profile.data.postalCode || ''
-            }));
-          }
-        } catch (error) {
-          console.error('Gagal mengambil profil:', error);
-        }
-      };
-      fetchProfile();
+      return;
     }
+
+    // Verify stock availability immediately on checkout mount
+    const verifyStockAndProfile = async () => {
+      try {
+        const stockCheck = await validateCartStock(cartStateItems.map(i => ({ id: i.id, quantity: i.quantity })));
+        if (!stockCheck.isValid) {
+          toast.error(stockCheck.errorMessage || 'Stok produk tidak mencukupi. Silakan periksa keranjang belanja Anda.');
+          router.push('/cart');
+          return;
+        }
+
+        const profile = await getProfile();
+        if (profile.success && profile.data) {
+          setFormData((prev) => ({
+            ...prev,
+            name: profile.data.name || '',
+            email: profile.data.email || '',
+            phone: profile.data.mobile || '',
+            address: profile.data.address || '',
+            province: profile.data.province || '',
+            city: profile.data.city || '',
+            postalCode: profile.data.postalCode || ''
+          }));
+        }
+      } catch (error) {
+        console.error('Gagal memverifikasi checkout:', error);
+      }
+    };
+
+    verifyStockAndProfile();
   }, [router]);
 
   useEffect(() => {
@@ -223,7 +237,13 @@ export default function CheckoutClient() {
         throw new Error(data.error || 'Gagal memproses pesanan.');
       }
 
+      /*
+       * Mengosongkan keranjang lokal Zustand dan database akun member segera setelah pesanan terbit 
+       * sehingga dropdown navbar dan keranjang belanja langsung bersih saat pembayaran diproses
+       */
       clearCart();
+      clearDbCart().catch(() => {});
+
       toast.success('Pesanan berhasil dibuat! Mengalihkan ke pembayaran...');
       router.push(`/payment/${data.orderId}`);
     } catch (error: any) {
@@ -233,24 +253,15 @@ export default function CheckoutClient() {
     }
   };
 
-  const isProd = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true';
-  const snapJsUrl = isProd ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
   return (
     <div className="bg-[#fcfbf9] min-h-screen">
-      <Script
-        src={snapJsUrl}
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-        strategy="lazyOnload"
-      />
-
       {/* Breadcrumbs */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 text-xs text-gray-500 flex items-center gap-2">
           <Link href="/" className="hover:text-primary-green transition-colors">Beranda</Link>
-          <ChevronRight size={13} className="text-gray-400" />
+          <CaretRight size={13} className="text-gray-400" />
           <Link href="/cart" className="hover:text-primary-green transition-colors">Keranjang</Link>
-          <ChevronRight size={13} className="text-gray-400" />
+          <CaretRight size={13} className="text-gray-400" />
           <span className="text-gray-900 font-medium">Checkout</span>
         </div>
       </div>
@@ -289,50 +300,39 @@ export default function CheckoutClient() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Nama Lengkap <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      required
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      type="text"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
-                      placeholder="Nama lengkap penerima"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Alamat Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      required
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      type="email"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
-                      placeholder="email@contoh.com"
-                    />
-                  </div>
+                  <Input
+                    label="Nama Lengkap *"
+                    required
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    inputSize="sm"
+                    placeholder="Nama lengkap penerima"
+                  />
+                  <Input
+                    label="Alamat Email *"
+                    required
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    type="email"
+                    inputSize="sm"
+                    placeholder="email@contoh.com"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                    Nomor WhatsApp / Telepon <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <Input
+                    label="Nomor WhatsApp / Telepon *"
                     required
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
                     type="tel"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
+                    inputSize="sm"
                     placeholder="08123456789"
+                    helperText="Digunakan untuk koordinasi kurir saat pengantaran paket."
                   />
-                  <span className="text-[11px] text-gray-400 mt-1 block">Digunakan untuk koordinasi kurir saat pengantaran paket.</span>
                 </div>
               </div>
 
@@ -343,95 +343,71 @@ export default function CheckoutClient() {
                 </h2>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                      Alamat Lengkap <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
+                  <Textarea
+                    label="Alamat Lengkap *"
+                    required
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    inputSize="sm"
+                    placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan..."
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Select
+                      label="Provinsi *"
                       required
-                      name="address"
-                      value={formData.address}
+                      name="province"
+                      value={formData.province}
                       onChange={handleChange}
-                      rows={3}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all resize-none"
-                      placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, kecamatan..."
+                      inputSize="sm"
+                    >
+                      <option value="">Pilih Provinsi</option>
+                      <option value="Banten">Banten</option>
+                      <option value="DKI Jakarta">DKI Jakarta</option>
+                      <option value="Jawa Barat">Jawa Barat</option>
+                      <option value="Jawa Tengah">Jawa Tengah</option>
+                      <option value="DI Yogyakarta">DI Yogyakarta</option>
+                      <option value="Jawa Timur">Jawa Timur</option>
+                      <option disabled>--- Luar Pulau Jawa ---</option>
+                      <option value="Sumatera Utara">Sumatera Utara</option>
+                      <option value="Sumatera Selatan">Sumatera Selatan</option>
+                      <option value="Bali">Bali</option>
+                      <option value="Kalimantan Timur">Kalimantan Timur</option>
+                      <option value="Sulawesi Selatan">Sulawesi Selatan</option>
+                      <option value="Lainnya">Lainnya...</option>
+                    </Select>
+
+                    <Input
+                      label="Kota / Kabupaten *"
+                      required
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      inputSize="sm"
+                      placeholder="Contoh: Bandung"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                        Provinsi <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        required
-                        name="province"
-                        value={formData.province}
-                        onChange={handleChange}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all bg-white"
-                      >
-                        <option value="">Pilih Provinsi</option>
-                        <option value="Banten">Banten</option>
-                        <option value="DKI Jakarta">DKI Jakarta</option>
-                        <option value="Jawa Barat">Jawa Barat</option>
-                        <option value="Jawa Tengah">Jawa Tengah</option>
-                        <option value="DI Yogyakarta">DI Yogyakarta</option>
-                        <option value="Jawa Timur">Jawa Timur</option>
-                        <option disabled>--- Luar Pulau Jawa ---</option>
-                        <option value="Sumatera Utara">Sumatera Utara</option>
-                        <option value="Sumatera Selatan">Sumatera Selatan</option>
-                        <option value="Bali">Bali</option>
-                        <option value="Kalimantan Timur">Kalimantan Timur</option>
-                        <option value="Sulawesi Selatan">Sulawesi Selatan</option>
-                        <option value="Lainnya">Lainnya...</option>
-                      </select>
-                    </div>
+                    <Input
+                      label="Kode Pos *"
+                      required
+                      name="postalCode"
+                      value={formData.postalCode}
+                      onChange={handleChange}
+                      inputSize="sm"
+                      placeholder="12345"
+                    />
 
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                        Kota / Kabupaten <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        required
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        type="text"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
-                        placeholder="Contoh: Bandung"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                        Kode Pos <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        required
-                        name="postalCode"
-                        value={formData.postalCode}
-                        onChange={handleChange}
-                        type="text"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
-                        placeholder="12345"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                        Catatan Pengiriman (Opsional)
-                      </label>
-                      <input
-                        name="note"
-                        value={formData.note}
-                        onChange={handleChange}
-                        type="text"
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
-                        placeholder="Misal: Titipkan di pos satpam"
-                      />
-                    </div>
+                    <Input
+                      label="Catatan Pengiriman (Opsional)"
+                      name="note"
+                      value={formData.note}
+                      onChange={handleChange}
+                      inputSize="sm"
+                      placeholder="Misal: Titipkan di pos satpam"
+                    />
                   </div>
                 </div>
               </div>
@@ -458,10 +434,11 @@ export default function CheckoutClient() {
                           alt={item.title}
                           width={48}
                           height={48}
-                          className="max-h-full object-contain"
+                          style={{ width: 'auto', height: 'auto' }}
+                          className="max-h-full max-w-full object-contain"
                         />
                       ) : (
-                        <span className="text-sm">🌿</span>
+                        <Plant size={18} className="text-gray-300" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -489,14 +466,17 @@ export default function CheckoutClient() {
                         className="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium uppercase focus:outline-none focus:ring-2 focus:ring-primary-green/20 focus:border-primary-green transition-all"
                       />
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={handleApplyVoucher}
                       disabled={isCheckingVoucher || !voucherCode.trim()}
-                      className="px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors cursor-pointer"
+                      isLoading={isCheckingVoucher}
+                      className="px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-semibold"
                     >
-                      {isCheckingVoucher ? 'Cek...' : 'Pakai'}
-                    </button>
+                      Pakai
+                    </Button>
                   </div>
                 ) : (
                   <div className="bg-green-50 border border-green-100 p-2.5 rounded-lg flex items-center justify-between text-xs">
@@ -562,23 +542,17 @@ export default function CheckoutClient() {
               </div>
 
               {/* Submit CTA */}
-              <button
+              <Button
                 type="submit"
+                variant="primary"
+                size="lg"
                 disabled={isLoading}
-                className="w-full h-11 bg-primary-green hover:bg-primary-green-hover text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                isLoading={isLoading}
+                leftIcon={<Lock size={13} />}
+                className="w-full h-11 bg-primary-green hover:bg-primary-green-hover text-white font-bold rounded-lg text-xs shadow-2xs"
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin" />
-                    <span>Memproses Pesanan...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock size={13} />
-                    <span>Lanjut ke Pembayaran</span>
-                  </>
-                )}
-              </button>
+                Lanjut ke Pembayaran
+              </Button>
 
               {/* Trust Badges */}
               <div className="pt-2 border-t border-gray-100 space-y-1.5 text-[11px] text-gray-500">
@@ -587,7 +561,7 @@ export default function CheckoutClient() {
                   <span>Transaksi Aman Terenkripsi via Midtrans</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <PackageCheck size={13} className="text-primary-green shrink-0" />
+                  <Package size={13} className="text-primary-green shrink-0" />
                   <span>Garansi 100% Herbal Alami Original</span>
                 </div>
               </div>

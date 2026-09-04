@@ -4,6 +4,7 @@ import midtransClient from 'midtrans-client';
 import { getSession } from '@/lib/session';
 import { checkoutLimiter } from '@/lib/ratelimit';
 import { createOrderClaimToken } from '@/lib/order-security';
+import { sanitizeString, isValidEmail } from '@/lib/validation';
 
 // Initialize Midtrans Snap Client with dynamic environment support
 const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
@@ -40,16 +41,39 @@ export async function POST(req: Request) {
       voucherCode
     } = body;
 
-    if (!items || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Keranjang belanja kosong' }, { status: 400 });
     }
 
-    if (!name || !email || !phone || !address) {
+    // Sanitize & validate shipping inputs
+    const cleanName = sanitizeString(name).slice(0, 100);
+    const cleanEmail = typeof email === 'string' ? email.toLowerCase().trim() : '';
+    const cleanPhone = sanitizeString(phone).slice(0, 30);
+    const cleanAddress = sanitizeString(address).slice(0, 500);
+    const cleanProvince = sanitizeString(province || '').slice(0, 100);
+    const cleanCity = sanitizeString(city || '').slice(0, 100);
+    const cleanPostalCode = sanitizeString(postalCode || '').slice(0, 20);
+    const cleanNote = note ? sanitizeString(note).slice(0, 500) : null;
+    const safeShippingFee = Math.max(0, Number(shippingFee) || 0);
+
+    if (!cleanName || !cleanEmail || !cleanPhone || !cleanAddress) {
       return NextResponse.json({ error: 'Data pengiriman tidak lengkap' }, { status: 400 });
     }
 
+    if (!isValidEmail(cleanEmail)) {
+      return NextResponse.json({ error: 'Format alamat email tidak valid' }, { status: 400 });
+    }
+
+    // Validate integer quantities for all cart items (prevent NaN/negative/float exploitation)
+    for (const item of items) {
+      const qty = Math.floor(Number(item.quantity));
+      if (!Number.isInteger(qty) || qty < 1 || qty > 999) {
+        return NextResponse.json({ error: 'Kuantitas produk dalam keranjang tidak valid' }, { status: 400 });
+      }
+      item.quantity = qty;
+    }
+
     const session = await getSession();
-    const cleanEmail = email.toLowerCase().trim();
 
     // 2. Anti-Hoarding Check: User cannot place another order if they already have an active unpaid order
     const existingUnpaidOrder = await prisma.order.findFirst({
@@ -107,7 +131,7 @@ export async function POST(req: Request) {
 
         // Exact stock verification under lock
         if (product.quantity < item.quantity) {
-          throw new Error(`Stok tidak mencukupi untuk "${product.title}". Stok tersedia: ${product.quantity}`);
+          throw new Error(`Stok produk "${product.title}" tidak mencukupi permintaan Anda (tersedia: ${product.quantity} item).`);
         }
 
         // If remaining stock after purchase is <= 2, trigger 1-hour urgent reservation window
@@ -186,28 +210,28 @@ export async function POST(req: Request) {
         });
       }
 
-      const grossAmount = subtotal - finalDiscountAmount + shippingFee;
+      const grossAmount = subtotal - finalDiscountAmount + safeShippingFee;
 
       // Create Order
       const createdOrder = await tx.order.create({
         data: {
           orderId,
           userId: session ? session.userId : null,
-          guestName: name,
+          guestName: cleanName,
           guestEmail: cleanEmail,
-          shippingName: name,
-          shippingMobile: phone,
-          shippingAddress: address,
-          shippingProvince: province,
-          shippingCity: city,
-          shippingPostalCode: postalCode,
-          shippingNote: note,
+          shippingName: cleanName,
+          shippingMobile: cleanPhone,
+          shippingAddress: cleanAddress,
+          shippingProvince: cleanProvince,
+          shippingCity: cleanCity,
+          shippingPostalCode: cleanPostalCode,
+          shippingNote: cleanNote,
           paymentAmount: grossAmount,
           orderStatus: 'WAITING_FOR_PAYMENT',
           paymentStatus: 'UNPAID',
           paymentExpiry,
           voucherId: finalDiscountAmount > 0 ? finalVoucherId : null,
-          voucherCode: finalDiscountAmount > 0 ? voucherCode.toUpperCase().trim() : null,
+          voucherCode: finalDiscountAmount > 0 && voucherCode ? voucherCode.toUpperCase().trim() : null,
           discountAmount: finalDiscountAmount > 0 ? finalDiscountAmount : 0,
           orderItems: {
             create: orderItems.map(oi => ({
@@ -219,6 +243,16 @@ export async function POST(req: Request) {
         }
       });
 
+      /*
+       * Mengosongkan keranjang di database untuk akun member segera setelah pesanan terbentuk 
+       * guna mencegah item yang sama tertinggal atau terbayar ganda pada sesi berikutnya
+       */
+      if (session?.userId) {
+        await tx.cartItem.deleteMany({
+          where: { userId: session.userId }
+        });
+      }
+
       return {
         order: createdOrder,
         orderItems,
@@ -229,6 +263,17 @@ export async function POST(req: Request) {
       };
     });
 
+    /*
+     * Menghapus cache keranjang di Redis agar panggilan sinkronisasi cart berikutnya 
+     * langsung merefleksikan status keranjang kosong tanpa menunggu TTL 5 menit habis
+     */
+    if (session?.userId) {
+      try {
+        const { redis } = await import('@/lib/redis');
+        await redis.del(`cart:${session.userId}`);
+      } catch {}
+    }
+
     // 4. Prepare Midtrans Snap parameters with dynamic expiry
     const itemDetails = transactionResult.orderItems.map(item => ({
       id: item.productId,
@@ -237,10 +282,10 @@ export async function POST(req: Request) {
       name: item.name.substring(0, 50)
     }));
 
-    if (shippingFee > 0) {
+    if (safeShippingFee > 0) {
       itemDetails.push({
         id: 'SHIPPING',
-        price: shippingFee,
+        price: safeShippingFee,
         quantity: 1,
         name: 'Ongkos Kirim'
       });
@@ -251,7 +296,7 @@ export async function POST(req: Request) {
         id: 'DISCOUNT',
         price: -transactionResult.finalDiscountAmount,
         quantity: 1,
-        name: `Diskon Voucher (${voucherCode})`
+        name: `Diskon Voucher (${voucherCode ? voucherCode.toUpperCase().trim() : ''})`
       });
     }
 
@@ -261,23 +306,23 @@ export async function POST(req: Request) {
         gross_amount: transactionResult.grossAmount
       },
       customer_details: {
-        first_name: name,
+        first_name: cleanName,
         email: cleanEmail,
-        phone: phone,
+        phone: cleanPhone,
         shipping_address: {
-          first_name: name,
+          first_name: cleanName,
           email: cleanEmail,
-          phone: phone,
-          address: address,
-          city: city,
-          postal_code: postalCode,
+          phone: cleanPhone,
+          address: cleanAddress,
+          city: cleanCity,
+          postal_code: cleanPostalCode,
           country_code: 'IDN'
         }
       },
       item_details: itemDetails,
       expiry: {
-        unit: 'hours',
-        duration: transactionResult.cooldownHours
+        unit: 'minute',
+        duration: transactionResult.cooldownHours * 60
       }
     };
 

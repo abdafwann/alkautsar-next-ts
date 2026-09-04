@@ -1,4 +1,7 @@
-import { MessageCircle, Heart, Plus, ShoppingBag } from 'lucide-react';
+'use client';
+
+import { ChatCircleDots, Heart, Plus, ShoppingBag } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/Button';
 
 interface ProductMobileActionBarProps {
   isOutOfStock: boolean;
@@ -9,9 +12,9 @@ interface ProductMobileActionBarProps {
   onConsultation: () => void;
 }
 
-/**
- * Mobile-viewport fixed bottom action bar.
- * Provides thumb-accessible checkout and consultation triggers.
+/*
+ * Bilah aksi mobile yang dipasang melayang tetap di bagian bawah layar (fixed bottom) 
+ * guna mempermudah jangkauan ibu jari (thumb-zone) pengguna ponsel pintar saat berbelanja
  */
 export default function ProductMobileActionBar({
   isOutOfStock,
@@ -23,47 +26,69 @@ export default function ProductMobileActionBar({
 }: ProductMobileActionBarProps) {
   return (
     <aside 
-      aria-label="Mobile Actions" 
+      aria-label="Aksi Cepat Pembelian Mobile" 
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-3 py-2 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
     >
       <div className="flex items-center gap-2">
-        {/* Quick WhatsApp Consultation */}
+        {/*
+         * Tombol konsultasi WhatsApp cepat untuk konsultasi keluhan kesehatan langsung dari viewport mobile
+         */}
         <button
+          type="button"
           onClick={onConsultation}
-          className="w-10 h-10 rounded-xl bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 flex items-center justify-center shrink-0 cursor-pointer"
+          className="w-10 h-10 rounded-xl bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/30 flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
           title="Konsultasi WhatsApp"
+          aria-label="Konsultasi kesehatan via WhatsApp"
         >
-          <MessageCircle size={18} />
+          <ChatCircleDots size={20} weight="fill" />
         </button>
 
-        {/* Quick Wishlist Toggle */}
+        {/*
+         * Tombol toggle wishlist mobile dengan feedback perubahan status terisi (fill)
+         */}
         <button
+          type="button"
           onClick={onToggleWishlist}
-          className="w-10 h-10 rounded-xl border border-gray-200 text-gray-600 hover:text-red-500 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-xl border border-gray-200 text-gray-600 hover:text-rose-600 flex items-center justify-center shrink-0 transition-colors cursor-pointer active:scale-95"
           title="Wishlist"
+          aria-label={isWishlisted ? 'Hapus dari wishlist' : 'Simpan ke wishlist'}
         >
-          <Heart size={18} className={isWishlisted ? 'text-red-500 fill-red-500' : ''} />
+          <Heart 
+            size={20} 
+            weight={isWishlisted ? 'fill' : 'regular'} 
+            className={isWishlisted ? 'text-rose-600' : ''} 
+          />
         </button>
 
-        {/* + Keranjang (Secondary Action) */}
-        <button
+        {/*
+         * Aksi sekunder: Tambah ke Keranjang bagi pembeli yang masih ingin mencari produk herbal lainnya
+         */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           onClick={onAddToCart}
           disabled={isOutOfStock}
-          className="flex-1 h-10 rounded-xl bg-white border-2 border-[var(--color-primary-green)] text-[var(--color-primary-green)] font-bold text-xs text-center flex items-center justify-center gap-1 active:scale-98 disabled:opacity-50 cursor-pointer"
+          leftIcon={<Plus size={14} weight="bold" />}
+          className="flex-1 h-10 text-xs font-bold border-primary-green text-primary-green hover:bg-primary-green/5 hover:border-primary-green shadow-none"
         >
-          <Plus size={15} />
           Keranjang
-        </button>
+        </Button>
 
-        {/* Beli Sekarang (Primary Action) */}
-        <button
+        {/*
+         * Aksi primer: Beli Sekarang langsung memicu checkout bagi pembeli dengan niat beli tinggi
+         */}
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
           onClick={onBuyNow}
           disabled={isOutOfStock}
-          className="flex-1 h-10 rounded-xl bg-[var(--color-primary-green)] text-white font-bold text-xs text-center shadow-xs flex items-center justify-center gap-1 active:scale-98 disabled:opacity-50 cursor-pointer"
+          leftIcon={<ShoppingBag size={14} weight="bold" />}
+          className="flex-1 h-10 text-xs font-bold shadow-2xs"
         >
-          <ShoppingBag size={15} />
           Beli Sekarang
-        </button>
+        </Button>
       </div>
     </aside>
   );

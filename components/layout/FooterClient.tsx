@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { MapPin, Mail, Phone, ArrowRight } from 'lucide-react';
+import { MapPin, EnvelopeSimple, Phone, ArrowRight } from '@phosphor-icons/react';
 
 interface StoreSettings {
   storeName: string;
@@ -31,7 +31,7 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
     return null;
   }
 
-  // Fallbacks
+  /* Menyediakan data fallback default jika konfigurasi dinamis toko dari database belum diset */
   const storeName = settings?.storeName || 'PT. AL-KAUTSAR';
   const logoUrl = settings?.logoUrl;
   const description = settings?.description || 'Menyediakan akses ke obat alami, herbal, dan tradisional berstandar resmi BPOM untuk kebugaran keseharian Anda.';
@@ -44,37 +44,47 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
           
-          {/* Brand & Contact Column */}
+          {/*
+           * Kolom identitas resmi dan kontak pelanggan diatur simetris dengan lebar 4 kolom desktop 
+           */}
           <div className="lg:col-span-4 lg:pr-12">
-            <h4 className="text-xl font-heading font-extrabold mb-6 tracking-tight flex items-center gap-2.5 text-white">
-              {logoUrl ? (
-                <Image 
-                  src={logoUrl} 
-                  alt={storeName} 
-                  width={140} 
-                  height={32} 
-                  className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert" 
-                />
-              ) : (
-                <i className="fas fa-leaf text-primary-green text-lg"></i>
-              )}
-              <span>{storeName}</span>
-            </h4>
-            <p className="text-sm text-gray-300 mb-8 leading-relaxed whitespace-pre-line max-w-sm">
+            {/*
+             * Menengahkan blok identitas brand dan membentangkan garis pembatas penuh (w-full) 
+             * agar simetri ujung-ke-ujung terjaga dengan lebar kolom dan teks deskripsi
+             */}
+            <div className="w-full flex flex-col items-center justify-center text-center">
+              <Link 
+                href="/" 
+                className="w-full flex flex-col items-center justify-center text-center select-none group"
+                aria-label="Al-Kautsar Herbal"
+              >
+                <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-white group-hover:text-primary-green transition-colors leading-tight text-center">
+                  Al-Kautsar
+                </span>
+                <span className="text-[8px] sm:text-[8.5px] tracking-[0.22em] uppercase font-bold text-[#d4af37] group-hover:text-primary-green transition-colors mt-1 whitespace-nowrap text-center">
+                  Indonesian Traditional Herbal Medicine
+                </span>
+              </Link>
+
+              {/* Garis pembatas solid membentang penuh (w-full) sampai ujung kolom tanpa terpotong */}
+              <div className="w-full h-px bg-white/15 my-6" />
+            </div>
+
+            <p className="text-sm text-gray-300 mb-8 leading-relaxed whitespace-pre-line">
               {description}
             </p>
             
             <div className="space-y-4 text-sm text-gray-300 font-medium">
               <div className="flex items-start gap-4">
-                <MapPin size={16} strokeWidth={1.5} className="text-primary-green shrink-0 mt-0.5" />
+                <MapPin size={18} weight="duotone" className="text-primary-green shrink-0 mt-0.5" />
                 <span className="whitespace-pre-line leading-relaxed">{address}</span>
               </div>
               <div className="flex items-center gap-4">
-                <Phone size={16} strokeWidth={1.5} className="text-primary-green shrink-0" />
+                <Phone size={18} weight="duotone" className="text-primary-green shrink-0" />
                 <span>{phone}</span>
               </div>
               <div className="flex items-center gap-4">
-                <Mail size={16} strokeWidth={1.5} className="text-primary-green shrink-0" />
+                <EnvelopeSimple size={18} weight="duotone" className="text-primary-green shrink-0" />
                 <span>{email}</span>
               </div>
             </div>
@@ -87,7 +97,7 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/shop">Katalog Belanja</Link></li>
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/blog">Artikel Kesehatan</Link></li>
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/">Tentang Kami</Link></li>
-              <li><Link className="hover:text-primary-green transition-colors duration-200" href="/">Kontak & Bantuan</Link></li>
+              <li><Link className="hover:text-primary-green transition-colors duration-200" href="/">Kontak &amp; Bantuan</Link></li>
             </ul>
           </div>
 
@@ -97,7 +107,7 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
             <ul className="space-y-4 text-sm text-gray-300 font-medium">
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/track-order">Lacak Pesanan</Link></li>
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/shipping-policy">Info Pengiriman</Link></li>
-              <li><Link className="hover:text-primary-green transition-colors duration-200" href="/return-policy">Garansi & Retur</Link></li>
+              <li><Link className="hover:text-primary-green transition-colors duration-200" href="/return-policy">Garansi &amp; Retur</Link></li>
               <li><Link className="hover:text-primary-green transition-colors duration-200" href="/privacy-policy">Kebijakan Privasi</Link></li>
             </ul>
           </div>
@@ -118,10 +128,10 @@ export default function FooterClient({ settings }: { settings: StoreSettings }) 
                 />
                 <button 
                   className="absolute right-1 top-1 bottom-1 aspect-square bg-primary-green text-white rounded-full flex items-center justify-center hover:bg-primary-green-hover transition-colors" 
-                  type="submit"
+                  type="submit" 
                   aria-label="Subscribe"
                 >
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} weight="bold" />
                 </button>
               </div>
             </form>

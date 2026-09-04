@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import midtransClient from 'midtrans-client';
+import { sanitizeString } from '@/lib/validation';
+import { resolveMidtransStatus, processOrderPaymentTransition } from '@/lib/order-transition';
 
 const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 const coreApi = new midtransClient.CoreApi({
@@ -17,8 +19,11 @@ export async function cancelOrder(orderId: string, reason: string = 'Dibatalkan 
     const session = await getSession();
     if (!session) return { success: false, error: 'Unauthorized: Silakan login terlebih dahulu' };
 
+    const cleanOrderId = sanitizeString(orderId).trim();
+    const cleanReason = sanitizeString(reason).slice(0, 500) || 'Dibatalkan oleh pembeli';
+
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { id: cleanOrderId },
       include: { orderItems: true }
     });
 
@@ -45,11 +50,11 @@ export async function cancelOrder(orderId: string, reason: string = 'Dibatalkan 
     await prisma.$transaction(async (tx) => {
       // 1. Mark order cancelled
       await tx.order.update({
-        where: { id: orderId },
+        where: { id: cleanOrderId },
         data: {
           orderStatus: 'CANCELLED',
           cancelledAt: new Date(),
-          cancellationReason: reason
+          cancellationReason: cleanReason
         }
       });
 
@@ -88,35 +93,15 @@ export async function syncPaymentStatus(midtransOrderId: string) {
     const transactionStatus = statusResponse.transaction_status;
     const fraudStatus = statusResponse.fraud_status;
 
-    let finalPaymentStatus = 'UNPAID';
-    let finalOrderStatus = 'WAITING_FOR_PAYMENT';
+    const { targetPaymentStatus, targetOrderStatus } = resolveMidtransStatus(transactionStatus, fraudStatus);
 
-    if (transactionStatus === 'capture') {
-      if (fraudStatus === 'challenge') {
-        finalPaymentStatus = 'UNPAID';
-      } else if (fraudStatus === 'accept') {
-        finalPaymentStatus = 'PAID';
-        finalOrderStatus = 'PROCESSING';
-      }
-    } else if (transactionStatus === 'settlement') {
-      finalPaymentStatus = 'PAID';
-      finalOrderStatus = 'PROCESSING';
-    } else if (transactionStatus === 'cancel' || transactionStatus === 'deny' || transactionStatus === 'expire') {
-      finalPaymentStatus = 'UNPAID';
-      finalOrderStatus = 'CANCELLED';
-    } else if (transactionStatus === 'pending') {
-      finalPaymentStatus = 'UNPAID';
-      finalOrderStatus = 'WAITING_FOR_PAYMENT';
-    }
-
-    await prisma.order.update({
-      where: { orderId: midtransOrderId },
-      data: {
-        paymentStatus: finalPaymentStatus as any,
-        orderStatus: finalOrderStatus as any,
-        paymentType: statusResponse.payment_type || undefined,
-        paymentSettlement: statusResponse.settlement_time || undefined
-      }
+    await processOrderPaymentTransition({
+      orderId: midtransOrderId,
+      targetPaymentStatus,
+      targetOrderStatus,
+      paymentType: statusResponse.payment_type || undefined,
+      paymentSettlement: statusResponse.settlement_time || undefined,
+      cancellationReason: `Pembayaran ${transactionStatus}`,
     });
 
     revalidatePath('/account/orders');
@@ -211,10 +196,13 @@ export async function requestOrderComplaint(orderId: string, reason: string, ema
       return { success: false, error: 'Komplain hanya dapat diajukan untuk pesanan yang sedang/sudah dikirim' };
     }
 
+    const cleanReason = sanitizeString(reason).slice(0, 500) || 'Pengajuan retur oleh pembeli';
+
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        orderStatus: 'RETURN_REQUESTED'
+        orderStatus: 'RETURN_REQUESTED',
+        cancellationReason: `[KOMPLAIN/RETUR] ${cleanReason}`
       }
     });
 

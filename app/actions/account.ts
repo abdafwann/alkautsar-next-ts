@@ -4,6 +4,7 @@ import { prisma, runWithRlsContext } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
+import { sanitizeString } from '@/lib/validation';
 
 export interface UserProfileData {
   name: string;
@@ -56,12 +57,19 @@ export async function updateProfile(formData: FormData): Promise<ActionResponse>
     const session = await getSession();
     if (!session || !session.userId) return { success: false, error: 'Unauthorized' };
 
-    const name = formData.get('name') as string;
-    const mobile = formData.get('mobile') as string;
-    const address = formData.get('address') as string;
-    const province = formData.get('province') as string;
-    const city = formData.get('city') as string;
-    const postalCode = formData.get('postalCode') as string;
+    const rawName = formData.get('name') as string;
+    const rawMobile = formData.get('mobile') as string;
+    const rawAddress = formData.get('address') as string;
+    const rawProvince = formData.get('province') as string;
+    const rawCity = formData.get('city') as string;
+    const rawPostalCode = formData.get('postalCode') as string;
+
+    const name = sanitizeString(rawName).slice(0, 100);
+    const mobile = rawMobile ? sanitizeString(rawMobile).slice(0, 30) : null;
+    const address = rawAddress ? sanitizeString(rawAddress).slice(0, 500) : null;
+    const province = rawProvince ? sanitizeString(rawProvince).slice(0, 100) : null;
+    const city = rawCity ? sanitizeString(rawCity).slice(0, 100) : null;
+    const postalCode = rawPostalCode ? sanitizeString(rawPostalCode).slice(0, 20) : null;
 
     if (!name) {
       return { success: false, error: 'Nama wajib diisi' };

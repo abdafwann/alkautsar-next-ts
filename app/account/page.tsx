@@ -13,12 +13,17 @@ export default async function AccountPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Profil Saya</h2>
-        <p className="text-sm text-gray-500 mt-1">Kelola informasi data diri dan kontak Anda di sini.</p>
+      <div className="pb-5 border-b border-[#ede8de]">
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-accent-brown block mb-1">
+          Informasi Pribadi
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-serif font-bold text-text-main tracking-tight">
+          Profil Saya
+        </h2>
+        <p className="text-xs text-text-main/70 mt-1 leading-relaxed">
+          Kelola data diri, kontak, dan alamat utama pengiriman obat herbal keluarga Anda.
+        </p>
       </div>
-
-      <div className="h-px w-full bg-zinc-100" />
 
       <ProfileFormClient initialData={profile.data} />
     </div>

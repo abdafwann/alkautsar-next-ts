@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alkautsar E-Commerce
 
-## Getting Started
+Platform e-commerce toko herbal tradisional Alkautsar. Dibangun dengan Next.js 16 (App Router), TypeScript, PostgreSQL via Prisma ORM, dan integrasi payment gateway Midtrans (Snap & Webhook).
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech Stack
+
+- **Framework:** Next.js 16 (React 19, App Router)
+- **Bahasa:** TypeScript
+- **Styling:** Tailwind CSS v4, Lucide Icons, Phosphor Icons
+- **Database & ORM:** PostgreSQL (Supabase pooler) + Prisma 7
+- **Payment Gateway:** Midtrans (Snap Pop-up, Core API Status, Webhook Handler)
+- **State Management:** Zustand (Cart & client state)
+- **Rate Limiting & Cache:** Upstash Redis
+- **Media Upload:** Cloudinary
+- **Transactional Email:** Resend
+- **Testing:** Vitest (Unit, Integration, Functional) + Playwright (E2E)
+
+---
+
+## Arsitektur & Fitur Utama
+
+- **Katalog & Checkout:**
+  - Dynamic product search, category filter, dan sorting.
+  - Cart persistensi dengan proteksi validasi stok real-time saat checkout.
+  - Sistem kupon/voucher diskon dengan kalkulasi presisi (fixed & persentase).
+- **Payment & Order Lifecycle:**
+  - Integrasi Midtrans Snap dengan countdown transaksi tersinkronisasi.
+  - Webhook listener (`/api/webhook/midtrans`) dengan verifikasi signature hash SHA512.
+  - Adaptive smart polling (`/api/payment/[orderId]`) dengan Page Visibility API untuk fallback sinkronisasi status pembayaran otomatis.
+  - Mekanisme rollback stok otomatis jika pesanan dibatalkan (`CANCELLED`/`EXPIRED`).
+- **Admin Dashboard:**
+  - Manajemen produk (rich text deskripsi via TipTap + Cloudinary upload).
+  - Manajemen stok, kategori, dan pesanan pelanggan.
+  - Sudo mode / Master security PIN untuk operasi sensitif.
+- **Security:**
+  - Rate limiting berbasis IP/User via Upstash Redis.
+  - Sanitasi payload input (DOMPurify).
+  - Proteksi rute via JWT middleware & custom auth guard.
+
+---
+
+## Struktur Folder
+
+```text
+├── app/                  # Next.js App Router (Pages, Layouts, API Routes)
+│   ├── api/              # API endpoints (auth, checkout, payment, webhook, admin)
+│   ├── payment/          # Halaman status pembayaran & snap handler
+│   └── (auth)/           # Rute autentikasi user & admin
+├── components/           # UI Components (Navbar, Cart, ProductCard, Modals)
+├── lib/                  # Utility functions (prisma, midtrans, redis, auth, sanitizers)
+├── store/                # Zustand stores (useCartStore, etc.)
+├── prisma/               # Schema database & migrasi
+├── tests/                # Unit, Integration, & Functional tests (Vitest)
+├── e2e/                  # End-to-end browser automation tests (Playwright)
+└── analysis/             # Dokumen teknis, test review, & panduan manual testing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cara Menjalankan Project (Local Development)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Prasyarat
+- Node.js versi 20+
+- PostgreSQL database (lokal atau cloud provider seperti Supabase/Neon)
+- Akun Midtrans Sandbox (Client Key & Server Key)
+- Akun Cloudinary & Upstash Redis
 
-## Learn More
+### 2. Instalasi Dependency
+```bash
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Setup Environment Variables
+Salin file `.env.example` menjadi `.env`, lalu lengkapi isinya:
+```bash
+cp .env.example .env
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Setup Database
+Sinkronkan schema Prisma ke database Anda:
+```bash
+npx prisma db push
+npx prisma generate
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 5. Jalankan Development Server
+```bash
+npm run dev
+```
+Buka [http://localhost:3000](http://localhost:3000) di browser.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Menjalankan Testing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project ini dilengkapi dengan total 37 test suite (322 automated tests) yang mencakup unit test, integration API, functional user journey, dan end-to-end browser testing.
+
+### Menjalankan Unit, Integration, & Functional Tests (Vitest)
+```bash
+# Menjalankan seluruh test sekali jalan (CI mode)
+npm run test:run
+
+# Mode watch (interactive)
+npm run test
+```
+
+### Menjalankan End-to-End Tests (Playwright)
+```bash
+# Pastikan server dev berjalan di localhost:3000
+npm run test:e2e
+
+# Menjalankan dengan UI mode
+npx playwright test --ui
+```
+
+---
+
+## Pengujian Midtrans Webhook di Local
+
+Untuk menguji webhook Midtrans secara real-time di environment lokal:
+
+1. Jalankan tunneling (misal menggunakan Cloudflare Tunnel atau Ngrok):
+   ```bash
+   .\cloudflared.exe tunnel --url http://localhost:3000
+   ```
+2. Masukkan URL tunnel ke **Midtrans Dashboard > Settings > Configuration > Payment Notification URL**:
+   ```text
+   https://<your-tunnel-url>/api/webhook/midtrans
+   ```
+3. Simulasi pembayaran melalui [Midtrans Payment Simulator](https://simulator.sandbox.midtrans.com).
+
+Panduan skenario pengujian manual detail tersedia di [`analysis/phase5-manual-guide.md`](analysis/phase5-manual-guide.md).
+
+---
+
+## Build Production
+
+```bash
+npm run build
+npm run start
+```

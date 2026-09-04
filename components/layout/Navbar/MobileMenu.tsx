@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { X, Search, Store, BookOpen, Heart, Package, User } from 'lucide-react';
+import { X, MagnifyingGlass, Storefront, BookOpen, Heart, Package, User } from '@phosphor-icons/react';
 import { useWishlistStore } from '@/store/useWishlistStore';
 import { useCartStore } from '@/store/useCartStore';
 import { Category, User as UserType } from './types';
@@ -94,7 +94,7 @@ function MobileSearchBar({
           type="submit"
           className="absolute right-0 top-0 h-full px-4 text-gray-400"
         >
-          <Search size={18} strokeWidth={2} />
+          <MagnifyingGlass size={18} />
         </button>
       </form>
     </div>
@@ -115,7 +115,7 @@ function MobileAuthSection({
       <div className="p-4 border-t border-gray-100 bg-gray-50/50">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-primary-green/10 rounded-full flex items-center justify-center text-primary-green">
-            <User size={20} />
+            <User size={20} weight="duotone" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
@@ -209,7 +209,7 @@ export function MobileMenu({
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-1.5 bg-white rounded-xl shadow-xs border border-gray-100 cursor-pointer"
           >
-            <X size={18} strokeWidth={2} />
+            <X size={18} weight="bold" />
           </button>
         </div>
 
@@ -225,20 +225,20 @@ export function MobileMenu({
           {/* Main Menu */}
           <div className="py-2">
             <SectionHeader>Menu Utama</SectionHeader>
-            <MobileNavLink href="/shop" icon={<Store size={18} />}>
+            <MobileNavLink href="/shop" icon={<Storefront size={18} weight="duotone" />}>
               Semua Produk
             </MobileNavLink>
-            <MobileNavLink href="/blog" icon={<BookOpen size={18} />}>
-              Blog & Informasi
+            <MobileNavLink href="/blog" icon={<BookOpen size={18} weight="duotone" />}>
+              Blog &amp; Informasi
             </MobileNavLink>
             <MobileNavLink
               href="/wishlist"
-              icon={<Heart size={18} />}
+              icon={<Heart size={18} weight="duotone" />}
               badge={wishlistItems.length}
             >
               Wishlist
             </MobileNavLink>
-            <MobileNavLink href="/track-order" icon={<Package size={18} />}>
+            <MobileNavLink href="/track-order" icon={<Package size={18} weight="duotone" />}>
               Lacak Pesanan
             </MobileNavLink>
           </div>
