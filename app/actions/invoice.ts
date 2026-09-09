@@ -1,8 +1,11 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { requireAdmin } from '@/lib/auth-guard';
+import { SESSION } from '@/lib/constants';
+import { verifyOrderClaimToken } from '@/lib/order-security';
 
 export interface InvoiceItem {
   id: string;
@@ -149,8 +152,33 @@ export async function getInvoiceData(orderIdentifier: string): Promise<{ success
     });
 
     if (!order) {
-      // If not in DB, fallback to sample invoice so preview never crashes
-      return { success: true, data: { ...SAMPLE_INVOICE, orderId: orderIdentifier } };
+      return { success: false, error: 'Pesanan tidak ditemukan' };
+    }
+
+    // 🔒 BOLA / IDOR Protection: Verify identity of requester
+    const session = await getSession();
+    const cookieStore = await cookies();
+    const effectiveOrderId = order.orderId || order.id;
+    const claimCookie = effectiveOrderId ? cookieStore.get(`order_claim_${effectiveOrderId}`)?.value : undefined;
+    const adminCookie = cookieStore.get(SESSION.ADMIN_COOKIE)?.value;
+
+    let isAdmin = false;
+    if (adminCookie) {
+      try {
+        const admin = await requireAdmin();
+        if (admin) isAdmin = true;
+      } catch {
+        isAdmin = false;
+      }
+    }
+    const isMember = Boolean(session?.userId && order.userId && session.userId === order.userId);
+    const hasClaimToken = Boolean(claimCookie && (await verifyOrderClaimToken(claimCookie, effectiveOrderId)));
+
+    if (!isAdmin && !isMember && !hasClaimToken) {
+      return {
+        success: false,
+        error: 'Akses ditolak: Verifikasi identitas atau klaim sesi diperlukan untuk melihat faktur.'
+      };
     }
 
     // Generate and persist invoiceId if missing
@@ -161,10 +189,14 @@ export async function getInvoiceData(orderIdentifier: string): Promise<{ success
       invoiceNumber = `INV/${dateStr}/ALK/${uniqueSuffix}`;
 
       // Update in DB asynchronously
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { invoiceId: invoiceNumber }
-      }).catch(() => {});
+      try {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { invoiceId: invoiceNumber }
+        });
+      } catch {
+        // Non-blocking update failure
+      }
     }
 
     // Calculate itemized totals
