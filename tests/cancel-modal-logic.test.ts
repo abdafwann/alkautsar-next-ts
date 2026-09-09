@@ -25,11 +25,11 @@ const getStatusConfig = (status: string) => {
     case 'WAITING_FOR_PAYMENT':
       return { label: 'Belum Bayar', canCancel: true };
     case 'PAID':
-      return { label: 'Dibayar', canCancel: true };
+      return { label: 'Dibayar', canCancel: false };
     case 'PROCESSING':
-      return { label: 'Sedang Diproses', canCancel: true };
+      return { label: 'Sedang Diproses', canCancel: false };
     case 'PREPARING':
-      return { label: 'Sedang Dikemas', canCancel: true };
+      return { label: 'Sedang Dikemas', canCancel: false };
     case 'IN_DELIVERY':
       return { label: 'Dalam Pengiriman', canCancel: false };
     case 'DELIVERED':
@@ -97,18 +97,18 @@ describe('Cancel Modal Pure Logic', () => {
 
   // ── getStatusConfig canCancel Boundary ─────────────────────
   describe('getStatusConfig — canCancel boundary', () => {
-    const cancellableStatuses = ['WAITING_FOR_PAYMENT', 'PAID', 'PROCESSING', 'PREPARING'];
-    const nonCancellableStatuses = ['IN_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURN_REQUESTED', 'RETURNED'];
+    const cancellableStatuses = ['WAITING_FOR_PAYMENT'];
+    const nonCancellableStatuses = ['PAID', 'PROCESSING', 'PREPARING', 'IN_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURN_REQUESTED', 'RETURNED'];
 
     it.each(cancellableStatuses)(
-      'canCancel should be TRUE for pre-shipment status: %s',
+      'canCancel should be TRUE for unpaid pre-shipment status: %s',
       (status) => {
         expect(getStatusConfig(status).canCancel).toBe(true);
       }
     );
 
     it.each(nonCancellableStatuses)(
-      'canCancel should be FALSE for post-shipment/terminal status: %s',
+      'canCancel should be FALSE for paid/in-progress/terminal status: %s',
       (status) => {
         expect(getStatusConfig(status).canCancel).toBe(false);
       }

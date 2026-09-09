@@ -103,38 +103,34 @@ describe('Redesigned Orders Flow & Lifecycle', () => {
       expect(result.error).toContain('Unauthorized');
     });
 
-    it('should allow cancellation when status is WAITING_FOR_PAYMENT, PROCESSING, or PREPARING', async () => {
+    it('should allow cancellation when status is WAITING_FOR_PAYMENT and unpaid', async () => {
       const { getSession } = await import('@/lib/session');
       const { prisma } = await import('@/lib/prisma');
       const { cancelOrder } = await import('@/app/actions/order');
 
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: 'user-1' });
 
-      const allowedStatuses = ['WAITING_FOR_PAYMENT', 'PROCESSING', 'PREPARING'];
+      (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: 'order-123',
+        userId: 'user-1',
+        orderStatus: 'WAITING_FOR_PAYMENT',
+        paymentStatus: 'UNPAID',
+        orderItems: [{ productId: 'prod-1', count: 2 }],
+        voucherCode: null
+      });
 
-      for (const status of allowedStatuses) {
-        (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
-          id: 'order-123',
-          userId: 'user-1',
-          orderStatus: status,
-          paymentStatus: status === 'WAITING_FOR_PAYMENT' ? 'UNPAID' : 'PAID',
-          orderItems: [{ productId: 'prod-1', count: 2 }],
-          voucherCode: null
-        });
-
-        const result = await cancelOrder('order-123');
-        expect(result.success).toBe(true);
-      }
+      const result = await cancelOrder('order-123');
+      expect(result.success).toBe(true);
     });
 
-    it('should block cancellation when status is IN_DELIVERY, DELIVERED, or COMPLETED', async () => {
+    it('should block cancellation when status is paid or already processing/in delivery/completed', async () => {
       const { getSession } = await import('@/lib/session');
       const { prisma } = await import('@/lib/prisma');
       const { cancelOrder } = await import('@/app/actions/order');
 
       (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: 'user-1' });
 
-      const blockedStatuses = ['IN_DELIVERY', 'DELIVERED', 'COMPLETED'];
+      const blockedStatuses = ['PROCESSING', 'PREPARING', 'IN_DELIVERY', 'DELIVERED', 'COMPLETED'];
 
       for (const status of blockedStatuses) {
         (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -148,7 +144,7 @@ describe('Redesigned Orders Flow & Lifecycle', () => {
 
         const result = await cancelOrder('order-123');
         expect(result.success).toBe(false);
-        expect(result.error).toContain('tidak dapat dibatalkan');
+        expect(result.error).toMatch(/tidak dapat dibatalkan langsung|hubungi/i);
       }
     });
   });

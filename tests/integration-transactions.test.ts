@@ -39,19 +39,19 @@ describe('Phase 2 Integration: Database Transaction Atomicity & Isolation', () =
     vi.clearAllMocks();
   });
 
-  describe('1. Atomic Cancel Order Transaction (Paid Status)', () => {
-    it('executes product stock restoration, sold count decrement, voucher restoration, and order cancellation atomically within single $transaction', async () => {
+  describe('1. Atomic Cancel Order Transaction (Unpaid Status)', () => {
+    it('executes product stock restoration, voucher restoration, and order cancellation atomically within single $transaction', async () => {
       vi.mocked(getSession).mockResolvedValue({
         userId: 'usr-buyer-1',
         role: 'MEMBER',
       } as any);
 
       vi.mocked(prisma.order.findUnique).mockResolvedValue({
-        id: 'db-ord-paid-1',
-        orderId: 'ORD-PAID-TEST',
+        id: 'db-ord-unpaid-1',
+        orderId: 'ORD-UNPAID-TEST',
         userId: 'usr-buyer-1',
-        orderStatus: 'PROCESSING',
-        paymentStatus: 'PAID',
+        orderStatus: 'WAITING_FOR_PAYMENT',
+        paymentStatus: 'UNPAID',
         voucherCode: 'SUPERPROMO',
         orderItems: [
           { productId: 'prod-item-1', count: 3 },
@@ -69,26 +69,24 @@ describe('Phase 2 Integration: Database Transaction Atomicity & Isolation', () =
         return callback(mockTx);
       });
 
-      const result = await cancelOrder('ORD-PAID-TEST', 'Ingin mengubah alamat pengiriman');
+      const result = await cancelOrder('ORD-UNPAID-TEST', 'Ingin mengubah alamat pengiriman');
 
       expect(result.success).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
 
-      // Verify Product 1: quantity +3, sold -3
+      // Verify Product 1: quantity +3
       expect(mockTx.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-item-1' },
         data: {
           quantity: { increment: 3 },
-          sold: { decrement: 3 },
         },
       });
 
-      // Verify Product 2: quantity +1, sold -1
+      // Verify Product 2: quantity +1
       expect(mockTx.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-item-2' },
         data: {
           quantity: { increment: 1 },
-          sold: { decrement: 1 },
         },
       });
 
@@ -100,7 +98,7 @@ describe('Phase 2 Integration: Database Transaction Atomicity & Isolation', () =
 
       // Verify Order: status CANCELLED, cancellationReason saved
       expect(mockTx.order.update).toHaveBeenCalledWith({
-        where: { id: 'ORD-PAID-TEST' },
+        where: { id: 'ORD-UNPAID-TEST' },
         data: {
           orderStatus: 'CANCELLED',
           cancelledAt: expect.any(Date),
@@ -168,8 +166,8 @@ describe('Phase 2 Integration: Database Transaction Atomicity & Isolation', () =
         id: 'db-ord-fail-1',
         orderId: 'ORD-FAIL-TEST',
         userId: 'usr-buyer-3',
-        orderStatus: 'PROCESSING',
-        paymentStatus: 'PAID',
+        orderStatus: 'WAITING_FOR_PAYMENT',
+        paymentStatus: 'UNPAID',
         voucherCode: 'FAULTYVOUCHER',
         orderItems: [{ productId: 'prod-fail-1', count: 2 }],
       } as any);

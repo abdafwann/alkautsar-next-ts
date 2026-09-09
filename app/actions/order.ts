@@ -35,16 +35,13 @@ export async function cancelOrder(orderId: string, reason: string = 'Dibatalkan 
       return { success: false, error: 'Akses ditolak: Anda bukan pemilik pesanan ini' };
     }
 
-    // Cancellation boundary: Only allowed during WAITING_FOR_PAYMENT, PROCESSING, or PREPARING
-    const cancellableStatuses = ['WAITING_FOR_PAYMENT', 'PROCESSING', 'PREPARING'];
-    if (!cancellableStatuses.includes(order.orderStatus)) {
+    // Cancellation boundary: Only allowed during WAITING_FOR_PAYMENT (Unpaid)
+    if (order.orderStatus !== 'WAITING_FOR_PAYMENT' || order.paymentStatus === 'PAID') {
       return {
         success: false,
-        error: 'Pesanan tidak dapat dibatalkan karena sudah dalam proses pengiriman atau selesai.'
+        error: 'Pesanan yang sudah dibayar atau sedang diproses tidak dapat dibatalkan langsung. Silakan hubungi layanan pelanggan untuk bantuan pengembalian dana.'
       };
     }
-
-    const wasPaid = order.paymentStatus === 'PAID';
 
     // Transactional cancellation & inventory rollback
     await prisma.$transaction(async (tx) => {
@@ -58,13 +55,12 @@ export async function cancelOrder(orderId: string, reason: string = 'Dibatalkan 
         }
       });
 
-      // 2. Restore product stock and revert sold count if it was paid
+      // 2. Restore product stock
       for (const item of order.orderItems) {
         await tx.product.update({
           where: { id: item.productId },
           data: {
-            quantity: { increment: item.count },
-            ...(wasPaid ? { sold: { decrement: item.count } } : {})
+            quantity: { increment: item.count }
           }
         });
       }

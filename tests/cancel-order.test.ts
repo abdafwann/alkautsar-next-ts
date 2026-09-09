@@ -119,11 +119,11 @@ describe('cancelOrder Server Action', () => {
 
   // ── Status Boundary ─────────────────────────────────────────
   describe('Cancellation Status Boundary', () => {
-    const cancellableStatuses = ['WAITING_FOR_PAYMENT', 'PROCESSING', 'PREPARING'];
-    const nonCancellableStatuses = ['IN_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED'];
+    const cancellableStatuses = ['WAITING_FOR_PAYMENT'];
+    const nonCancellableStatuses = ['PROCESSING', 'PREPARING', 'IN_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'RETURNED'];
 
     it.each(cancellableStatuses)(
-      'should allow cancellation for status: %s',
+      'should allow cancellation for status: %s when unpaid',
       async (status) => {
         const { getSession } = await import('@/lib/session');
         const { prisma } = await import('@/lib/prisma');
@@ -131,7 +131,7 @@ describe('cancelOrder Server Action', () => {
 
         (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: MOCK_USER_ID });
         (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
-          createMockOrder({ orderStatus: status })
+          createMockOrder({ orderStatus: status, paymentStatus: 'UNPAID' })
         );
 
         const result = await cancelOrder(MOCK_ORDER_ID);
@@ -140,7 +140,7 @@ describe('cancelOrder Server Action', () => {
     );
 
     it.each(nonCancellableStatuses)(
-      'should reject cancellation for status: %s',
+      'should reject direct cancellation for status: %s',
       async (status) => {
         const { getSession } = await import('@/lib/session');
         const { prisma } = await import('@/lib/prisma');
@@ -148,14 +148,29 @@ describe('cancelOrder Server Action', () => {
 
         (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: MOCK_USER_ID });
         (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
-          createMockOrder({ orderStatus: status })
+          createMockOrder({ orderStatus: status, paymentStatus: status === 'WAITING_FOR_PAYMENT' ? 'UNPAID' : 'PAID' })
         );
 
         const result = await cancelOrder(MOCK_ORDER_ID);
         expect(result.success).toBe(false);
-        expect(result.error).toMatch(/tidak dapat dibatalkan/i);
+        expect(result.error).toMatch(/tidak dapat dibatalkan langsung|hubungi/i);
       }
     );
+
+    it('should reject cancellation if order is already marked PAID', async () => {
+      const { getSession } = await import('@/lib/session');
+      const { prisma } = await import('@/lib/prisma');
+      const { cancelOrder } = await import('@/app/actions/order');
+
+      (getSession as ReturnType<typeof vi.fn>).mockResolvedValue({ userId: MOCK_USER_ID });
+      (prisma.order.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(
+        createMockOrder({ orderStatus: 'WAITING_FOR_PAYMENT', paymentStatus: 'PAID' })
+      );
+
+      const result = await cancelOrder(MOCK_ORDER_ID);
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/sudah dibayar/i);
+    });
   });
 
   // ── Transaction Rollback ────────────────────────────────────
@@ -186,7 +201,7 @@ describe('cancelOrder Server Action', () => {
       expect(txProductUpdateCalls[1][0].data.quantity).toEqual({ increment: 1 });
     });
 
-    it('should decrement sold count only when order was paid', async () => {
+    it('should reject cancellation and not touch transaction if order was paid', async () => {
       const { getSession } = await import('@/lib/session');
       const { prisma } = await import('@/lib/prisma');
       const { cancelOrder } = await import('@/app/actions/order');
@@ -196,21 +211,11 @@ describe('cancelOrder Server Action', () => {
         createMockOrder({ paymentStatus: 'PAID', orderStatus: 'PROCESSING' })
       );
 
-      let txProductUpdateCalls: any[] = [];
-      (prisma.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async (cb) => {
-        const txMock = {
-          order: { update: vi.fn() },
-          product: { update: vi.fn((...args: any[]) => txProductUpdateCalls.push(args)) },
-          voucher: { update: vi.fn() },
-        };
-        return cb(txMock);
-      });
+      const result = await cancelOrder(MOCK_ORDER_ID);
 
-      await cancelOrder(MOCK_ORDER_ID);
-
-      // Paid order: sold should be decremented
-      expect(txProductUpdateCalls[0][0].data.sold).toEqual({ decrement: 2 });
-      expect(txProductUpdateCalls[1][0].data.sold).toEqual({ decrement: 1 });
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/sudah dibayar atau sedang diproses/i);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('should NOT decrement sold count when order was unpaid', async () => {

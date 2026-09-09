@@ -190,11 +190,11 @@ export function OrdersListClient({ initialOrders }: { initialOrders: any[] }) {
       case 'WAITING_FOR_PAYMENT':
         return { color: 'text-amber-700 bg-amber-50 border-amber-200', label: 'Belum Bayar', canCancel: true };
       case 'PAID':
-        return { color: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: 'Dibayar', canCancel: true };
+        return { color: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: 'Dibayar', canCancel: false };
       case 'PROCESSING':
-        return { color: 'text-sky-700 bg-sky-50 border-sky-200', label: 'Sedang Diproses', canCancel: true };
+        return { color: 'text-sky-700 bg-sky-50 border-sky-200', label: 'Sedang Diproses', canCancel: false };
       case 'PREPARING':
-        return { color: 'text-indigo-700 bg-indigo-50 border-indigo-200', label: 'Sedang Dikemas', canCancel: true };
+        return { color: 'text-indigo-700 bg-indigo-50 border-indigo-200', label: 'Sedang Dikemas', canCancel: false };
       case 'IN_DELIVERY':
         return { color: 'text-blue-700 bg-blue-50 border-blue-200', label: 'Dalam Pengiriman', canCancel: false };
       case 'DELIVERED':
