@@ -669,18 +669,18 @@ export default function ProductList({ initialProducts, error }: ProductListProps
         </div>
 
         {/* Product Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed min-w-[800px] text-left text-sm">
+        <div className="overflow-x-auto rounded-b-xl scrollbar-thin scrollbar-thumb-gray-200">
+          <table className="w-full table-fixed min-w-[1040px] text-left text-sm">
             <thead>
-              <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="w-[36%] py-3 px-4">{locale === 'EN' ? 'PRODUCT' : 'PRODUK'}</th>
-                <th className="w-[20%] py-3 px-4">{locale === 'EN' ? 'CATEGORY & FORM' : 'KATEGORI & SEDIAAN'}</th>
-                <th className="w-[18%] py-3 px-4">{locale === 'EN' ? 'UNIT PRICE' : 'HARGA SATUAN'}</th>
-                <th className="w-[14%] py-3 px-4">{locale === 'EN' ? 'STOCK' : 'STOK GUDANG'}</th>
-                <th className="w-[12%] py-3 px-4 text-right">{locale === 'EN' ? 'OPTIONS' : 'OPSI'}</th>
+              <tr className="bg-gray-50/70 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                <th className="w-[28%] py-3.5 px-4">{locale === 'EN' ? 'PRODUCT' : 'PRODUK'}</th>
+                <th className="w-[20%] py-3.5 px-4">{locale === 'EN' ? 'CATEGORY & FORM' : 'KATEGORI & SEDIAAN'}</th>
+                <th className="w-[18%] py-3.5 px-4">{locale === 'EN' ? 'UNIT PRICE' : 'HARGA SATUAN'}</th>
+                <th className="w-[14%] py-3.5 px-4">{locale === 'EN' ? 'STOCK' : 'STOK GUDANG'}</th>
+                <th className="w-[20%] py-3.5 px-4 text-right">{locale === 'EN' ? 'OPTIONS' : 'OPSI'}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50 text-gray-700">
+            <tbody className="divide-y divide-gray-100 text-gray-700">
               {paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-400 text-xs">
@@ -697,23 +697,25 @@ export default function ProductList({ initialProducts, error }: ProductListProps
                     : null;
 
                   return (
-                    <tr key={product.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={product.id} className="hover:bg-gray-50/60 transition-colors">
                       {/* Product Thumbnail & Identity */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200/80 overflow-hidden shrink-0 flex items-center justify-center">
                             <img src={image} alt={product.title} className="w-full h-full object-cover" />
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-xs text-gray-900">{product.title}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-xs text-gray-900 truncate max-w-[210px] inline-block" title={product.title}>
+                                {product.title}
+                              </span>
                               {product.isFeatured && (
-                                <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold px-1.5 py-0.2 rounded-md">
+                                <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold px-1.5 py-0.2 rounded-md shrink-0">
                                   <Sparkles size={10} /> Unggulan
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                            <div className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">
                               /{product.slug}
                             </div>
                           </div>
@@ -721,13 +723,13 @@ export default function ProductList({ initialProducts, error }: ProductListProps
                       </td>
 
                       {/* Category & Form */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-md">
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-semibold px-2 py-0.5 rounded-md shrink-0">
                             <Tag size={11} /> {product.category?.name || 'Umum'}
                           </span>
                           {product.productForm && (
-                            <span className="text-[11px] text-gray-500 font-medium bg-gray-50 border border-gray-200/60 px-1.5 py-0.5 rounded-md">
+                            <span className="text-[11px] text-gray-500 font-medium bg-gray-50 border border-gray-200/60 px-1.5 py-0.5 rounded-md shrink-0">
                               {product.productForm}
                             </span>
                           )}
@@ -735,15 +737,15 @@ export default function ProductList({ initialProducts, error }: ProductListProps
                       </td>
 
                       {/* Price & Promo (Active vs Expired vs Normal) */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 align-middle">
                         {promoStatus.isActive && formattedPromoPrice ? (
                           <div className="space-y-1">
                             {/* Line 1: Promo Price + Normal Struck-through Price + Discount Pill */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-xs text-red-600 font-mono">{formattedPromoPrice}</span>
                               <span className="text-[11px] text-gray-400 line-through font-mono">{formattedPrice}</span>
                               {product.promoPercentage && (
-                                <span className="px-1.5 py-0.2 bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold rounded-md">
+                                <span className="px-1.5 py-0.2 bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold rounded-md shrink-0">
                                   -{product.promoPercentage}%
                                 </span>
                               )}
@@ -775,53 +777,53 @@ export default function ProductList({ initialProducts, error }: ProductListProps
                       </td>
 
                       {/* Stock Status Badge */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 align-middle">
                         {product.quantity <= 5 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                            <AlertTriangle size={11} /> {product.quantity} Kritis
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200 shrink-0">
+                            <AlertTriangle size={12} /> {product.quantity} Kritis
                           </span>
                         ) : product.quantity <= 10 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                             {product.quantity} Menipis
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={11} /> {product.quantity} Tersedia
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            <CheckCircle2 size={12} /> {product.quantity} Tersedia
                           </span>
                         )}
                       </td>
 
                       {/* Action Options */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="py-3.5 px-4 text-right align-middle">
+                        <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                           <button
                             onClick={() => handleOpenStockModal(product)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-gray-200/80 hover:border-emerald-200 bg-white transition-all cursor-pointer shrink-0 shadow-2xs"
                             title="Tambah Stok Gudang"
                           >
-                            <PackagePlus size={13} />
+                            <PackagePlus size={13} className="text-emerald-600" />
                             <span>Stok</span>
                           </button>
 
                           <button
                             onClick={() => handleOpenPromoModal(product)}
-                            className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer shrink-0 shadow-2xs ${
                               product.isPromo 
-                                ? 'text-red-700 bg-red-50 hover:bg-red-100' 
-                                : 'text-gray-600 hover:text-amber-700 hover:bg-amber-50'
+                                ? 'text-red-700 bg-red-50/80 border-red-200 hover:bg-red-100' 
+                                : 'text-gray-700 bg-white border-gray-200/80 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200'
                             }`}
                             title="Atur Promo / Diskon"
                           >
-                            <Tag size={13} />
+                            <Tag size={13} className={product.isPromo ? 'text-red-600' : 'text-amber-600'} />
                             <span>Promo</span>
                           </button>
 
-                          <Link href={`/admin/products/form?id=${product.id}`}>
+                          <Link href={`/admin/products/form?id=${product.id}`} className="shrink-0">
                             <button
-                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:text-blue-700 hover:bg-blue-50 rounded-lg border border-gray-200/80 hover:border-blue-200 bg-white transition-all cursor-pointer shadow-2xs"
                               title="Edit Data Produk"
                             >
-                              <Edit2 size={13} />
+                              <Edit2 size={13} className="text-blue-600" />
                               <span>Edit</span>
                             </button>
                           </Link>
@@ -831,10 +833,10 @@ export default function ProductList({ initialProducts, error }: ProductListProps
                               setDeletingProduct(product);
                               setIsDeleteOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center p-1.5 text-xs font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-lg border border-gray-200/80 hover:border-red-200 bg-white transition-all cursor-pointer shrink-0 shadow-2xs"
                             title="Hapus Produk"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>

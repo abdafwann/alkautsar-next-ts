@@ -176,10 +176,14 @@ describe('Phase 2 Integration: Payment, Track Order, and Health APIs', () => {
       expect(res.status).toBe(200);
       expect(json.success).toBe(true);
       // PII should be masked
+      expect(json.order.isOwner).toBe(false);
       expect(json.order.guestName).not.toBe('John Doe');
       expect(json.order.guestEmail).toContain('***@example.com');
+      expect(json.order.trackEmail).toContain('***@example.com');
+      expect(json.order.snapToken).toBeNull();
       expect(json.order.shippingMobile).toContain('****');
       expect(json.order.shippingAddress).toContain('********');
+      expect(res.headers.get('set-cookie')).toBeNull();
     });
   });
 

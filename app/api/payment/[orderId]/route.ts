@@ -143,24 +143,22 @@ export async function GET(
       ? order.paymentExpiry.toISOString()
       : order.paymentExpiry;
 
-    const claimToken = await createOrderClaimToken(String(order.orderId || ''), String(rawGuestEmail || ''));
-
     const response = NextResponse.json({
       success: true,
       order: {
         orderId: order.orderId,
         guestName: isOwner ? order.guestName : maskName(order.guestName),
         guestEmail: isOwner ? rawGuestEmail : maskEmail(rawGuestEmail),
-        trackEmail: rawGuestEmail,
+        trackEmail: isOwner ? rawGuestEmail : maskEmail(rawGuestEmail),
         userId: order.userId,
         isMember: Boolean(order.userId),
-        isOwner: true,
+        isOwner,
         ...shippingData,
         paymentAmount: order.paymentAmount ? Number(order.paymentAmount) : 0,
         paymentExpiry: formattedExpiry,
         paymentStatus: order.paymentStatus,
         orderStatus: order.orderStatus,
-        snapToken: order.snapToken,
+        snapToken: isOwner && order.paymentStatus === 'UNPAID' ? order.snapToken : null,
         orderItems: order.orderItems.map(item => ({
           id: item.id,
           count: item.count,
@@ -170,7 +168,8 @@ export async function GET(
       }
     });
 
-    if (rawGuestEmail) {
+    if (isOwner && rawGuestEmail && !claimCookie) {
+      const claimToken = await createOrderClaimToken(String(order.orderId || ''), String(rawGuestEmail || ''));
       response.cookies.set(`order_claim_${order.orderId}`, claimToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
