@@ -359,5 +359,50 @@ describe('Phase 2 Integration: Checkout API Route', () => {
       expect(setCookieHeader).toBeDefined();
       expect(setCookieHeader).toContain('order_claim_');
     });
+
+    it('enforces server-side shipping fee calculation and prevents client fee tampering', async () => {
+      vi.mocked(prisma.order.findFirst).mockResolvedValue(null);
+
+      const mockTx = {
+        $queryRaw: vi.fn().mockResolvedValue([
+          { id: 'prod-1', title: 'Habbatussauda', price: 50000, quantity: 20, isPromo: false },
+        ]),
+        product: { update: vi.fn() },
+        order: {
+          create: vi.fn().mockResolvedValue({
+            id: 'ord-db-outside-java',
+            orderId: 'ORDER-OUTSIDE-JAVA',
+          }),
+        },
+        cartItem: { deleteMany: vi.fn() },
+      };
+
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+        return callback(mockTx);
+      });
+
+      mockSnapCreateTransaction.mockResolvedValue({ token: 'snap-token-outside-java' });
+      vi.mocked(prisma.order.update).mockResolvedValue({} as any);
+
+      // Client attempts to send shippingFee: 0 for Outside Java destination
+      const req = createCheckoutRequest({
+        ...validPayload,
+        province: 'Sumatera Barat',
+        shippingFee: 0,
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      // Subtotal (2 * 50k = 100k) + Outside Java Fee (30k) = 130k
+      expect(mockTx.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            paymentAmount: 130000,
+            shippingProvince: 'Sumatera Barat',
+          }),
+        })
+      );
+    });
   });
 });

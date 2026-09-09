@@ -5,6 +5,7 @@ import { getSession } from '@/lib/session';
 import { checkoutLimiter } from '@/lib/ratelimit';
 import { createOrderClaimToken } from '@/lib/order-security';
 import { sanitizeString, isValidEmail } from '@/lib/validation';
+import { calculateShippingFee } from '@/lib/shipping';
 
 // Initialize Midtrans Snap Client with dynamic environment support
 const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
@@ -54,7 +55,12 @@ export async function POST(req: Request) {
     const cleanCity = sanitizeString(city || '').slice(0, 100);
     const cleanPostalCode = sanitizeString(postalCode || '').slice(0, 20);
     const cleanNote = note ? sanitizeString(note).slice(0, 500) : null;
-    const safeShippingFee = Math.max(0, Number(shippingFee) || 0);
+    
+    // Server-side authoritative shipping fee calculation (prevents client-side price tampering)
+    const { shippingFee: serverShippingFee } = calculateShippingFee({
+      province: cleanProvince,
+      city: cleanCity
+    });
 
     if (!cleanName || !cleanEmail || !cleanPhone || !cleanAddress) {
       return NextResponse.json({ error: 'Data pengiriman tidak lengkap' }, { status: 400 });
@@ -210,7 +216,7 @@ export async function POST(req: Request) {
         });
       }
 
-      const grossAmount = subtotal - finalDiscountAmount + safeShippingFee;
+      const grossAmount = subtotal - finalDiscountAmount + serverShippingFee;
 
       // Create Order
       const createdOrder = await tx.order.create({
@@ -282,10 +288,10 @@ export async function POST(req: Request) {
       name: item.name.substring(0, 50)
     }));
 
-    if (safeShippingFee > 0) {
+    if (serverShippingFee > 0) {
       itemDetails.push({
         id: 'SHIPPING',
-        price: safeShippingFee,
+        price: serverShippingFee,
         quantity: 1,
         name: 'Ongkos Kirim'
       });

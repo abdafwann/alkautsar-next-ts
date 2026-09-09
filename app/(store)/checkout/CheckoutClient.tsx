@@ -23,17 +23,7 @@ import { Input, Textarea, Select } from '@/components/ui/Input';
 import { getProfile } from '@/app/actions/account';
 import { validateCartStock, clearDbCart } from '@/app/actions/cart';
 import { checkVoucher } from '@/app/actions/voucher';
-
-const JAVA_PROVINCES = [
-  'Banten',
-  'DKI Jakarta',
-  'Jawa Barat',
-  'Jawa Tengah',
-  'DI Yogyakarta',
-  'Jawa Timur'
-];
-
-const OUTSIDE_JAVA_FEE = 30000;
+import { calculateShippingFee } from '@/lib/shipping';
 
 function formatRupiah(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -116,14 +106,17 @@ export default function CheckoutClient() {
   }, [router]);
 
   useEffect(() => {
-    if (JAVA_PROVINCES.includes(formData.province)) {
-      setShippingFee(0);
-    } else if (formData.province) {
-      setShippingFee(OUTSIDE_JAVA_FEE);
+    if (formData.province) {
+      const { shippingFee: calculatedFee } = calculateShippingFee({
+        province: formData.province,
+        city: formData.city,
+        subtotal
+      });
+      setShippingFee(calculatedFee);
     } else {
       setShippingFee(0);
     }
-  }, [formData.province]);
+  }, [formData.province, formData.city, subtotal]);
 
   const appliedVoucherCode = appliedVoucher?.code;
   useEffect(() => {

@@ -106,6 +106,21 @@ export const VOUCHER_LIMITS = {
 } as const;
 
 // ============================================================
+// SHIPPING RULES
+// ============================================================
+export const SHIPPING = {
+  JAVA_PROVINCES: [
+    'DKI Jakarta',
+    'Jawa Barat',
+    'Jawa Tengah',
+    'DI Yogyakarta',
+    'Jawa Timur',
+    'Banten',
+  ],
+  OUTSIDE_JAVA_FEE: 30000,
+} as const;
+
+// ============================================================
 // INQUIRY STATUSES
 // ============================================================
 export const InquiryStatuses = {
