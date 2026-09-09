@@ -50,3 +50,6 @@ export const authLimiter = createSafeLimiter(5, '10 m', '@upstash/ratelimit:auth
 
 // 3. Checkout Limiter: 10 requests per 1 minute per IP (Prevent checkout spam)
 export const checkoutLimiter = createSafeLimiter(10, '1 m', '@upstash/ratelimit:checkout');
+
+// 4. Payment Sync Limiter: 15 requests per 1 minute per IP (Prevent Midtrans API exhaustion)
+export const paymentSyncLimiter = createSafeLimiter(15, '1 m', '@upstash/ratelimit:payment-sync');
